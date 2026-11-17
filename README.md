@@ -139,7 +139,7 @@ chmod +x install.sh
 ## 🛠️ 工作原理架构 (Architecture Pipeline)
 
 <div align="center">
-  <img src="assets/architecture.jpg" alt="Antigravity Chinese Locale Architecture Pipeline" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+  <img src="assets/architecture.png" alt="Antigravity Chinese Locale Architecture Pipeline" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #E2E8F0;" />
 </div>
 
 <br>

@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="100%" height="100%">
+  <defs>
+    <!-- 浅色清爽微渐变底 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#EFF6FF" />
+    </linearGradient>
+
+    <!-- 柔和网格点图案 -->
+    <pattern id="gridDots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#CBD5E1" opacity="0.4" />
+    </pattern>
+
+    <!-- 卡片柔和漫反射微阴影 -->
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="125%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.06" />
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.04" />
+    </filter>
+
+    <!-- 卡片悬浮状态强阴影 -->
+    <filter id="hoverShadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#2563EB" flood-opacity="0.08" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.04" />
+    </filter>
+
+    <!-- 各步骤主题渐变色 -->
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" /><stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0EA5E9" /><stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" /><stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" /><stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" /><stop offset="100%" stop-color="#6D28D9" />
+    </linearGradient>
+    <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899" /><stop offset="100%" stop-color="#BE185D" />
+    </linearGradient>
+
+    <!-- 流程连线箭头 -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#94A3B8" />
+    </marker>
+  </defs>
+
+  <style>
+    .title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-weight: 700; fill: #0F172A; }
+    .subtitle { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-weight: 400; fill: #64748B; font-size: 14px; }
+    .badge-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; font-weight: 600; font-size: 11px; fill: #2563EB; letter-spacing: 1px; }
+    .card-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; font-weight: 700; font-size: 15px; fill: #1E293B; }
+    .card-sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 500; font-size: 11px; fill: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .card-desc { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif; font-weight: 400; font-size: 12px; fill: #475569; line-height: 1.5; }
+    .step-num { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-weight: 800; font-size: 12px; fill: #94A3B8; opacity: 0.8; }
+  </style>
+
+  <!-- 背景 -->
+  <rect width="1200" height="600" rx="16" fill="url(#bgGrad)" />
+  <rect width="1200" height="600" rx="16" fill="url(#gridDots)" />
+  <rect width="1200" height="600" rx="16" fill="none" stroke="#E2E8F0" stroke-width="1.5" />
+
+  <!-- 顶部标题区 -->
+  <g transform="translate(600, 55)" text-anchor="middle">
+    <!-- 小徽章 -->
+    <rect x="-70" y="-14" width="140" height="24" rx="12" fill="#DBEAFE" stroke="#BFDBFE" stroke-width="1" />
+    <text y="2" class="badge-text" text-anchor="middle">ENGINE PIPELINE</text>
+    
+    <!-- 主标题 -->
+    <text y="38" class="title" font-size="24">Google Antigravity 深度汉化引擎工作架构</text>
+    <text y="62" class="subtitle">全生命周期守卫 • 底层受控键值透传 • 零微任务死循环 • 原子打包与实时热重载</text>
+  </g>
+
+  <!-- ================= 流程连接线 ================= -->
+  <!-- 第1行卡片之间的连线 -->
+  <path d="M 390 220 L 440 220" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+  <path d="M 750 220 L 800 220" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- 第1行到第2行的换行拐角连线 -->
+  <path d="M 955 305 C 955 350, 955 350, 955 365 C 955 385, 935 385, 910 385 L 820 385 C 790 385, 300 385, 270 385 C 245 385, 245 405, 245 425" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- 第2行卡片之间的连线 -->
+  <path d="M 390 490 L 440 490" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+  <path d="M 750 490 L 800 490" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+
+  <!-- ================= 卡片 1: 官方纯净备份 ================= -->
+  <g transform="translate(80, 150)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <!-- 顶部状态指示条 -->
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad1)" />
+    <!-- 图标背景圆 -->
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#EFF6FF" />
+    <path d="M 38 28 L 48 32 L 48 44 C 48 49 38 54 38 54 C 38 54 28 49 28 44 L 28 32 Z" fill="none" stroke="#2563EB" stroke-width="2" stroke-linejoin="round" />
+    <path d="M 34 40 L 37 43 L 43 37" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- 文字 -->
+    <text x="70" y="36" class="card-title">1. 官方纯净备份</text>
+    <text x="70" y="52" class="card-sub">Pristine Backup</text>
+    <text x="280" y="36" class="step-num">01</text>
+    <text x="18" y="85" class="card-desc">自动归档官方原生 app.asar.bak 副本</text>
+    <text x="18" y="105" class="card-desc">零污染、防覆写，保障 100% 随时无损回滚</text>
+    <rect x="18" y="118" width="85" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">app.asar.bak</text>
+  </g>
+
+  <!-- ================= 卡片 2: 数据解耦引擎 ================= -->
+  <g transform="translate(440, 150)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad2)" />
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#F0F9FF" />
+    <rect x="27" y="29" width="22" height="22" rx="4" fill="none" stroke="#0284C7" stroke-width="2" />
+    <path d="M 31 36 L 45 36 M 31 40 L 41 40 M 31 44 L 43 44" stroke="#0284C7" stroke-width="2" stroke-linecap="round" />
+    <text x="70" y="36" class="card-title">2. 数据解耦引擎</text>
+    <text x="70" y="52" class="card-sub">Decoupled i18n Store</text>
+    <text x="280" y="36" class="step-num">02</text>
+    <text x="18" y="85" class="card-desc">独立 i18n_data.json，杜绝反引号转义崩溃</text>
+    <text x="18" y="105" class="card-desc">原生 Map.prototype 代理桥，受控组件防卡死</text>
+    <rect x="18" y="118" width="105" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">reverse_map 桥接</text>
+  </g>
+
+  <!-- ================= 卡片 3: 全生命周期守卫 ================= -->
+  <g transform="translate(800, 150)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad3)" />
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#ECFDF5" />
+    <path d="M 38 27 A 11 11 0 1 1 29 42" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" />
+    <path d="M 28 37 L 29 43 L 35 43" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="70" y="36" class="card-title">3. 全生命周期守卫</text>
+    <text x="70" y="52" class="card-sub">Full Lifecycle Guard</text>
+    <text x="280" y="36" class="step-num">03</text>
+    <text x="18" y="85" class="card-desc">注册 web-contents-created 全局全生命周期网</text>
+    <text x="18" y="105" class="card-desc">彻底解决系统托盘后台唤醒变回英文的难题</text>
+    <rect x="18" y="118" width="115" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">多窗体/重载守卫</text>
+  </g>
+
+  <!-- ================= 卡片 4: 静态语法门禁 ================= -->
+  <g transform="translate(80, 420)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad4)" />
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#FFFBEB" />
+    <rect x="27" y="28" width="22" height="24" rx="3" fill="none" stroke="#D97706" stroke-width="2" />
+    <path d="M 32 40 L 36 44 L 44 34" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="70" y="36" class="card-title">4. 静态语法门禁</text>
+    <text x="70" y="52" class="card-sub">Syntax Gatekeeper</text>
+    <text x="280" y="36" class="step-num">04</text>
+    <text x="18" y="85" class="card-desc">沙箱隔离执行 node --check 静态语法分析</text>
+    <text x="18" y="105" class="card-desc">解包打包双向回环验证，0 容忍语法报错</text>
+    <rect x="18" y="118" width="95" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">node --check</text>
+  </g>
+
+  <!-- ================= 卡片 5: 原子安全封包 ================= -->
+  <g transform="translate(440, 420)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad5)" />
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#F5F3FF" />
+    <path d="M 38 27 L 47 32 L 38 37 L 29 32 Z" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linejoin="round" />
+    <path d="M 29 34 L 29 44 L 38 49 L 38 38" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linejoin="round" />
+    <path d="M 47 34 L 47 44 L 38 49" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linejoin="round" />
+    <text x="70" y="36" class="card-title">5. 原子安全封包</text>
+    <text x="70" y="52" class="card-sub">Atomic ASAR Pack</text>
+    <text x="280" y="36" class="step-num">05</text>
+    <text x="18" y="85" class="card-desc">集成 @electron/asar 打包底层原生依赖</text>
+    <text x="18" y="105" class="card-desc">同步替换 app.asar 与 .unpacked 目录</text>
+    <rect x="18" y="118" width="125" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">--unpack-dir 保护</text>
+  </g>
+
+  <!-- ================= 卡片 6: 实时免重启热更 ================= -->
+  <g transform="translate(800, 420)">
+    <rect width="310" height="140" rx="12" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" filter="url(#cardShadow)" />
+    <rect x="0" y="0" width="310" height="4" rx="2" fill="url(#grad6)" />
+    <rect x="18" y="20" width="40" height="40" rx="10" fill="#FDF2F8" />
+    <path d="M 39 27 L 31 38 L 37 38 L 36 49 L 45 37 L 39 37 Z" fill="none" stroke="#DB2777" stroke-width="2" stroke-linejoin="round" />
+    <text x="70" y="36" class="card-title">6. 实时免重启热更</text>
+    <text x="70" y="52" class="card-sub">Live CDP Hot Reload</text>
+    <text x="280" y="36" class="step-num">06</text>
+    <text x="18" y="85" class="card-desc">广播 Chrome DevTools Protocol 调试通道</text>
+    <text x="18" y="105" class="card-desc">向所有活跃主窗口与 Swarm 面板毫秒级注入</text>
+    <rect x="18" y="118" width="115" height="16" rx="4" fill="#F1F5F9" />
+    <text x="23" y="130" font-size="10" fill="#64748B" font-family="monospace">CDP WebSocket 广播</text>
+  </g>
+</svg>
