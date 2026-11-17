@@ -1,8 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Antigravity Chinese Locale Logo" width="112" height="112" style="margin-bottom: 8px;" />
-
-# 🌌 Antigravity Chinese Locale (Chinesizing)
+# Antigravity Chinese Locale
 
 **Google Antigravity 客户端全界面企业级深度汉化与全生命周期持久化套件**
 
