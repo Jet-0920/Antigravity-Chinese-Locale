@@ -136,18 +136,22 @@ chmod +x install.sh
 
 ---
 
-## 🛠️ 工作原理架构
+## 🛠️ 工作原理架构 (Architecture Pipeline)
 
-```mermaid
-flowchart TD
-    A["官方纯净备份 (app.asar.bak)"] --> B["数据解耦设计 (i18n_data.json + reverse_map)"]
-    B --> C["高可用运行时引擎 (i18n_runner.js + Map 代理桥)"]
-    C --> D["全生命周期守卫 (web-contents-created + 唤醒补偿)"]
-    D --> E["静态语法门禁 (node --check)"]
-    E -->|门禁通过| F["沙箱解包打包闭环验证"]
-    F -->|验证无误| G["原子替换 app.asar 与 .unpacked"]
-    G --> H["CDP 广播活跃窗口实时热重载"]
-```
+<div align="center">
+  <img src="assets/architecture.jpg" alt="Antigravity Chinese Locale Architecture Pipeline" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+</div>
+
+<br>
+
+| 流水线阶段 | 核心防护机理与设计目标 |
+| :--- | :--- |
+| **1. 官方纯净备份 (Pristine Backup)** | 初次运行自动归档原生 `app.asar.bak`，保留随时 100% 官方无损回滚能力。 |
+| **2. 数据解耦存储 (Decoupled i18n)** | 独立标准 `i18n_data.json` 存储，杜绝在主进程或执行脚本中硬编码反引号造成的 SyntaxError。 |
+| **3. 全生命周期守卫 (Full Lifecycle Guard)** | 挂载于 `app.on('web-contents-created')` 与 `showOrCreateWindow`，彻底攻克重启与托盘唤醒失效。 |
+| **4. 静态语法门禁 (Syntax Gatekeeper)** | 在沙箱隔离环境中强制执行 `node --check` 语法分析，确保任何改动 0 报错才准许打包。 |
+| **5. 原子安全封包 (Atomic Production Pack)** | 双向同步 `app.asar` 与 `.unpacked` 依赖目录，确保底层原生 C++ 二进制模块 0 缺失。 |
+| **6. 零感知实时热更 (Live CDP Hot Reload)** | 广播 Chrome DevTools Protocol，向所有活跃窗口动态应用最新词库，无需重启即刻生效。 |
 
 ---
 
