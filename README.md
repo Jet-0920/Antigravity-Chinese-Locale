@@ -1,4 +1,4 @@
-# Antigravity Chinese Locale (Chinesizing)
+# Antigravity-Chinese-Locale (Chinesizing)
 
 A robust, enterprise-grade Chinese localization package and autonomous engineering skill for Google Antigravity. Designed with full WebContents lifecycle guards, zero runtime microtask loops, Base UI / React controlled component bridges, and automated syntax gatekeepers to deliver a 100% persistent, crash-free, smooth native experience.
 
@@ -10,15 +10,15 @@ A robust, enterprise-grade Chinese localization package and autonomous engineeri
 
 ## Overview
 
-**Antigravity Chinese Locale** provides an enterprise-ready solution for translating Google Antigravity's desktop interface into Simplified Chinese. 
+**Antigravity-Chinese-Locale** provides an enterprise-ready solution for translating Google Antigravity's desktop interface into Simplified Chinese. 
 
 Unlike naive string-replacement scripts that cause Electron startup crashes (`SyntaxError`), dropdown freezes (from `characterData` microtask loops and Base UI key mismatch), or lose translations upon app restart/refresh (due to single-point `dom-ready` hooks and background tray process persistence), this project introduces an advanced **Full-Lifecycle Guard** and **Value-Matching Self-Healing Engine** that guarantees 100% persistence, speed, and rock-solid stability.
 
 Available both as an **Autonomous Agent Skill** (`Chinesizing`) for Antigravity, and as an **Independent One-Click Python Installer**.
 
-## Features (v2.0 Breakthroughs)
+## Features (v2.2 Breakthroughs)
 
-- 🌐 **Comprehensive Coverage (424+ Entries)**: Fully localizes General Settings, Application Preferences, Appearance & Themes, Models & Quotas, MCP Server Management, Project Configuration, Session History, and Native Window Menus.
+- 🌐 **Comprehensive Coverage (2,828+ Entries)**: Fully localizes General Settings, Application Preferences, Appearance & Themes, Models & Quotas, MCP Server Management, Project Configuration, Session History, Automation Schedules & Custom Frequency Selectors, Marketplace Plugins, Detailed Overview (README), Available Skills/Commands, and Native Window Menus.
 - 🔄 **Persistent Lifecycle Guards (Solves Restart/Reload Bug)**:
   - Hooks directly into Electron's global `app.on('web-contents-created')` to monitor `dom-ready`, `did-finish-load`, and `did-navigate-in-page`.
   - Injects wake-up compensation into `showOrCreateWindow` to seamlessly re-apply localization when restoring from the background tray.
@@ -100,9 +100,9 @@ This project is an independent open-source localization enhancement tool and is 
 
 支持作为 **Antigravity 智能体技能** (`Chinesizing`) 自动执行，亦可作为 **独立 Python 脚本** 一键安装。
 
-## 核心特性 (v2.0 重大突破)
+## 核心特性 (v2.2 重大突破)
 
-- 🌐 **全界面深度覆盖（424+ 精准词条）**：覆盖系统设置所有子页面、应用偏好、外观主题、模型与用量面板、MCP 服务管理、项目设置、会话历史列表以及顶部原生窗口菜单。
+- 🌐 **全界面深度覆盖（2,828+ 精准词条与 204 项受控映射）**：覆盖系统设置所有子页面、应用偏好、外观主题、模型与用量面板、MCP 服务管理、项目设置、会话历史列表、定时自动化自定义计划选择器、自定义扩展插件市场所有详情概览、技能指令描述以及顶部原生窗口菜单。
 - 🔄 **全生命周期守卫（彻底攻克“重启/刷新失效”难题）**：
   - 在主进程注册 `app.on('web-contents-created')` 全局生命周期拦截网，全面监听 `dom-ready`、`did-finish-load` 与 `did-navigate-in-page`；
   - 在 `showOrCreateWindow` 唤醒链路中加入补救执行，保证从系统托盘唤醒时即刻保持汉化。
@@ -142,14 +142,24 @@ This project is an independent open-source localization enhancement tool and is 
 如果你想脱离 Agent 直接在终端快速汉化：
 
 ```bash
-git clone https://github.com/renkeshui/antigravity-chinese-locale.git
-cd antigravity-chinese-locale
+git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
+cd Antigravity-Chinese-Locale
 
 # 执行安装脚本
 python scripts/deploy_chinese.py
 ```
 
 脚本将自动寻找客户端路径、备份原版文件（`app.asar.bak`）、建立全生命周期守卫、执行沙箱门禁校验并安全写入，最后实时刷新窗口。
+
+### 方式三：后续本地更新与一键同步到 GitHub
+
+当 Antigravity 客户端更新或本地新增汉化词条后，只需运行配套的自动化同步脚本：
+
+```bash
+python scripts/sync_to_github.py
+```
+
+脚本将自动完成语法门禁校验、统计最新词条数量，并自动提交和推送到您的 GitHub 仓库。
 
 > **关于彻底重启生效的提示**：Antigravity 默认在后台/系统托盘常驻运行。若关闭窗口后重新打开仍显示英文，只需在任务栏右下角托盘图标右键选择 **退出**（或在任务管理器结束残留进程）后重新打开，即可永久从磁盘加载生效。
 

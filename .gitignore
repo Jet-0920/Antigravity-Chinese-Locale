@@ -10,6 +10,7 @@ env/
 # Electron / Asar / Backups
 *.asar
 *.asar.bak
+*.bak
 *.asar.unpacked
 *.tmp
 *.log
