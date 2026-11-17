@@ -1,179 +1,188 @@
-# Antigravity-Chinese-Locale (Chinesizing)
+<div align="center">
 
-A robust, enterprise-grade Chinese localization package and autonomous engineering skill for Google Antigravity. Designed with full WebContents lifecycle guards, zero runtime microtask loops, Base UI / React controlled component bridges, and automated syntax gatekeepers to deliver a 100% persistent, crash-free, smooth native experience.
+# 🌌 Antigravity Chinese Locale (Chinesizing)
 
-[English](#english) | [中文说明](#chinese)
+**Google Antigravity 客户端全界面企业级深度汉化与全生命周期持久化套件**
 
----
+[![Release](https://img.shields.io/badge/Release-v2.5-brightgreen.svg?style=flat-square)](https://github.com/Jet-0920/Antigravity-Chinese-Locale/releases)
+[![Dictionary](https://img.shields.io/badge/Dictionary-2%2C999%2B%20Terms-blue.svg?style=flat-square)](scripts/i18n_data.json)
+[![Controlled Maps](https://img.shields.io/badge/Reverse%20Maps-233%20Items-orange.svg?style=flat-square)](scripts/i18n_data.json)
+[![Hot Reload](https://img.shields.io/badge/Hot%20Reload-CDP%20Supported-success.svg?style=flat-square)](#-零感知实时热重载)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-purple.svg?style=flat-square)](#-环境要求)
 
-<a name="english"></a>
+<p align="center">
+  <b>彻底根治「重启变回英文」、「下拉选项卡死假死」、「三键滑动闪现英文」、「路由切换失效」等传统痛点</b><br>
+  提供媲美官方原生体验的 100% 持久、流畅、零崩溃的极致简体中文界面
+</p>
 
-## Overview
+[✨ 核心突破](#-核心突破-v25) • 
+[🤖 智能体一句话汉化](#-智能体一键极速汉化极力推荐) • 
+[💻 手动安装指南](#-手动安装指南) • 
+[📊 方案优势对比](#-方案对比) • 
+[❓ 常见问题 FAQ](#-常见问题--排查-faq)
 
-**Antigravity-Chinese-Locale** provides an enterprise-ready solution for translating Google Antigravity's desktop interface into Simplified Chinese. 
-
-Unlike naive string-replacement scripts that cause Electron startup crashes (`SyntaxError`), dropdown freezes (from `characterData` microtask loops and Base UI key mismatch), or lose translations upon app restart/refresh (due to single-point `dom-ready` hooks and background tray process persistence), this project introduces an advanced **Full-Lifecycle Guard** and **Value-Matching Self-Healing Engine** that guarantees 100% persistence, speed, and rock-solid stability.
-
-Available both as an **Autonomous Agent Skill** (`Chinesizing`) for Antigravity, and as an **Independent One-Click Python Installer**.
-
-## Features (v2.2 Breakthroughs)
-
-- 🌐 **Comprehensive Coverage (2,828+ Entries)**: Fully localizes General Settings, Application Preferences, Appearance & Themes, Models & Quotas, MCP Server Management, Project Configuration, Session History, Automation Schedules & Custom Frequency Selectors, Marketplace Plugins, Detailed Overview (README), Available Skills/Commands, and Native Window Menus.
-- 🔄 **Persistent Lifecycle Guards (Solves Restart/Reload Bug)**:
-  - Hooks directly into Electron's global `app.on('web-contents-created')` to monitor `dom-ready`, `did-finish-load`, and `did-navigate-in-page`.
-  - Injects wake-up compensation into `showOrCreateWindow` to seamlessly re-apply localization when restoring from the background tray.
-- ⚡ **Value-Matching Self-Healing (No Harmful WeakSet)**:
-  - Abandons permanent `WeakSet` node blacklisting. Uses pure value comparison so dynamically rendered React nodes and SPA route changes are instantly and progressively localized without recursion.
-- 🧩 **Fragmented TextNode Alignment**:
-  - Handles nested tags (`<a>`, `<span>`) by gracefully decomposing and pairing sliced text nodes, eliminating mixed Chinese/English sentences.
-- 🛡️ **Zero-Hang Architecture**:
-  - Excludes `characterData` from `MutationObserver` to prevent microtask recursive storms.
-  - Implements an atomic `isTranslating` re-entrancy lock.
-- 🔄 **Bidirectional Map Bridge**:
-  - Global `Map.prototype` proxy hook that automatically maps localized Chinese labels back to original English keys, fixing focus traps and selection freezes in Base UI & Radix UI dropdowns.
-- 🔒 **Syntax Gatekeeper Pipeline**:
-  - Enforces static code validation (`node --check`) in a temporary sandbox on `main.js`, `utils.js`, and `i18n_runner.js` before modifying any production `app.asar` bundle.
-- ⚡ **Zero-Restart Live Reload**:
-  - Supports instant hot-reloading through Chrome DevTools Protocol (CDP) without terminating running sessions.
-
-## Requirements
-
-- **Google Antigravity Client** (Windows, macOS, or Linux)
-- **Node.js**: v18.0.0 or later (with `npx` available in PATH)
-- **Python**: 3.8 or later (Standard library only, no pip dependencies needed)
-
-## Quick Start
-
-### Method 1: Use as an Antigravity Skill (Recommended)
-
-1. Copy the [`skills/Chinesizing`](skills/Chinesizing) folder directly into your Antigravity global skills directory:
-   - **Windows**: `%USERPROFILE%\.gemini\config\skills\Chinesizing\`
-   - **macOS / Linux**: `~/.gemini/config/skills/Chinesizing/`
-2. In your Antigravity chat, prompt:
-   > "请根据 Chinesizing 技能对当前客户端进行汉化部署"
-3. The agent will automatically run the safe deployment pipeline.
-
-### Method 2: Standalone One-Click Installer
-
-If you prefer running a direct script without an AI agent:
-
-```bash
-git clone https://github.com/renkeshui/antigravity-chinese-locale.git
-cd antigravity-chinese-locale
-
-# Run the installer
-python scripts/deploy_chinese.py
-```
-
-The installer will automatically detect your Antigravity installation, create an `app.asar.bak` backup, verify syntax, pack the bundle, and hot-reload your interface.
-
-> **Note on App Restart**: Antigravity runs in the background / system tray by default. If closing the window still displays English on reopen, right-click the Antigravity icon in your system tray and select **Quit** (or terminate the process in Task Manager) to allow the updated `app.asar` to load freshly from disk.
-
-## How It Works
-
-```mermaid
-flowchart TD
-    A["Pristine Backup (app.asar.bak)"] --> B["Decoupled Storage (i18n_data.json)"]
-    B --> C["Safe Injection Engine (i18n_runner.js + Map Hook)"]
-    C --> D["Full Lifecycle Guard (web-contents-created)"]
-    D --> E["Syntax Gatekeeper (node --check)"]
-    E -->|Passed| F["Sandbox Pack & Unpack Validation"]
-    F -->|Verified| G["Atomic ASAR & Unpacked Sync"]
-    G --> H["Live CDP Hot Reload"]
-```
-
-## License
-
-[MIT](LICENSE) © 2026 renkeshui
-
-## Disclaimer
-
-This project is an independent open-source localization enhancement tool and is not officially affiliated with or endorsed by Google. Use responsibly for personal productivity.
+</div>
 
 ---
 
-<a name="chinese"></a>
+## 🤖 智能体一键极速汉化（极力推荐）
 
-## 中文说明
+> **💡 最省心的方式**：您甚至不需要自己打开终端或敲任何命令！只需把本仓库链接发送给您的 Antigravity 智能体即可。
 
-**Antigravity Chinese Locale (Chinesizing)** 是一套专为 Google Antigravity 桌面客户端打造的企业级全界面深度汉化方案与自主 AI 技能。彻底解决了传统外挂脚本导致的启动语法崩溃（`SyntaxError`）、下拉选项点击假死（`characterData` 微任务死循环）、受控组件键值脱节以及**退出重开变回英文**等顽疾，提供媲美官方原生的持久流畅体验。
+### 💬 对 Antigravity 说一句话：
 
-支持作为 **Antigravity 智能体技能** (`Chinesizing`) 自动执行，亦可作为 **独立 Python 脚本** 一键安装。
+> **“帮我按照这个仓库中的内容汉化一下 Antigravity 客户端：https://github.com/Jet-0920/Antigravity-Chinese-Locale”**
 
-## 核心特性 (v2.2 重大突破)
+---
 
-- 🌐 **全界面深度覆盖（2,828+ 精准词条与 204 项受控映射）**：覆盖系统设置所有子页面、应用偏好、外观主题、模型与用量面板、MCP 服务管理、项目设置、会话历史列表、定时自动化自定义计划选择器、自定义扩展插件市场所有详情概览、技能指令描述以及顶部原生窗口菜单。
-- 🔄 **全生命周期守卫（彻底攻克“重启/刷新失效”难题）**：
-  - 在主进程注册 `app.on('web-contents-created')` 全局生命周期拦截网，全面监听 `dom-ready`、`did-finish-load` 与 `did-navigate-in-page`；
-  - 在 `showOrCreateWindow` 唤醒链路中加入补救执行，保证从系统托盘唤醒时即刻保持汉化。
-- ⚡ **纯值比对自愈引擎（弃用有害 WeakSet）**：
-  - 弃用节点引用级的 `WeakSet` 永久黑名单，改用“纯值比对自愈”机制；SPA 路由跳转和异步组件重新渲染时自动毫秒级响应并汉化，绝不发生中途变回英文。
-- 🧩 **内联切片文本（TextNode Fragmentation）精准缝合**：
-  - 针对句子中间嵌套超链接（`<a>`）或 Badge 的复杂 DOM，细粒度切片匹配，杜绝半中半英。
-- 🛡️ **彻底杜绝卡死与无限递归**：
-  - 彻底剔除 `MutationObserver` 中的 `characterData` 监听，物理切断微任务事件风暴；
-  - 引入 `isTranslating` 防重入原子锁，DOM 扫描耗时低于 0.001 秒。
-- 🔄 **底层双向映射桥（Bidirectional Map Bridge）**：
-  - 全局代理 `Map.prototype.has` 与 `get` 方法，使 Base UI / Radix UI 等受控组件在收到汉化中文时，能够无缝反查底层原生英文键名，彻底解决选项拒收与焦点挂死（Focus Trap）。
-- 🔒 **严格语法门禁**：
-  - 在沙箱临时目录中执行“提取 ➔ 注入 ➔ `node --check` 静态语法分析 ➔ 试打包 ➔ 沙箱解包验证”完整闭环，验证通过才执行原子替换。
-- ⚡ **零感知极速热重载**：
-  - 支持通过 Chrome DevTools 协议（CDP）对运行中的窗口进行热更新，无需立即重启客户端。
+### 📋 针对 Antigravity 智能体的执行指南 (For AI Agents)
 
-## 环境要求
+<!-- ANTIGRAVITY_AGENT_INSTRUCTIONS_START -->
+> [!NOTE]
+> **致正在协助用户的 Antigravity 智能体**：  
+> 当收到用户关于“按照本仓库进行汉化”的请求时，请直接在终端中按顺序执行以下跨平台自动化命令即可完成全套部署：
+> 
+> ```bash
+> # 1. 克隆本仓库到临时或工作区目录
+> git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
+> cd Antigravity-Chinese-Locale
+> 
+> # 2. 执行安全持久化部署引擎（自动探测路径、备份 app.asar.bak、执行门禁并广播热重载）
+> python scripts/deploy_chinese.py
+> ```
+> 
+> **执行保障**：
+> - 脚本已内建多平台资源路径自动探测（Windows / macOS / Linux）；
+> - 自动创建官方原版备份 `app.asar.bak`；
+> - 100% 通过 `node --check` 语法门禁后才执行原子写入；
+> - 自动通过 CDP 协议向当前活跃窗口广播热重载，无需用户立即重启客户端即可呈现全中文！
+<!-- ANTIGRAVITY_AGENT_INSTRUCTIONS_END -->
 
-- **Google Antigravity 客户端**（支持 Windows / macOS / Linux）
-- **Node.js**：v18.0.0 或更高版本（需在终端中可执行 `npx`）
-- **Python**：3.8 或更高版本（仅使用标准库，无需额外 pip 安装）
+---
 
-## 快速开始
+## 💻 手动安装指南
 
-### 方式一：作为 Antigravity 技能使用（推荐）
+如果您偏好手动执行，本项目提供了各平台专属的一键式安装入口：
 
-1. 将本仓库中的 [`skills/Chinesizing`](skills/Chinesizing) 文件夹直接复制到 Antigravity 全局技能目录：
-   - **Windows**: `%USERPROFILE%\.gemini\config\skills\Chinesizing\`
-   - **macOS / Linux**: `~/.gemini/config/skills/Chinesizing/`
-2. 在 Antigravity 对话框中发送：
-   > “请根据 Chinesizing 技能对当前客户端进行汉化部署”
-3. 智能体将自动依照标准工程规范执行全流程安装。
+### 🪟 Windows 用户（两种极简方式）
 
-### 方式二：独立 Python 一键汉化脚本
+#### 方式 A：双击一键运行（最简单）
+1. 下载或克隆本仓库；
+2. 直接双击仓库根目录下的 **`install.bat`** 即可自动完成全套安装。
 
-如果你想脱离 Agent 直接在终端快速汉化：
-
-```bash
+#### 方式 B：终端运行
+```powershell
+# 克隆仓库
 git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
 cd Antigravity-Chinese-Locale
 
-# 执行安装脚本
-python scripts/deploy_chinese.py
+# 运行安装脚本
+python scripts\deploy_chinese.py
+# 或者运行 PowerShell 脚本: .\install.ps1
 ```
 
-脚本将自动寻找客户端路径、备份原版文件（`app.asar.bak`）、建立全生命周期守卫、执行沙箱门禁校验并安全写入，最后实时刷新窗口。
+---
 
-### 方式三：后续本地更新与一键同步到 GitHub
+### 🍎 macOS / 🐧 Linux 用户
 
-当 Antigravity 客户端更新或本地新增汉化词条后，只需运行配套的自动化同步脚本：
-
+在终端中执行以下命令：
 ```bash
-python scripts/sync_to_github.py
+# 克隆仓库
+git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
+cd Antigravity-Chinese-Locale
+
+# 赋予执行权限并运行
+chmod +x install.sh
+./install.sh
+# 或直接运行: python3 scripts/deploy_chinese.py
 ```
 
-脚本将自动完成语法门禁校验、统计最新词条数量，并自动提交和推送到您的 GitHub 仓库。
+---
 
-> **关于彻底重启生效的提示**：Antigravity 默认在后台/系统托盘常驻运行。若关闭窗口后重新打开仍显示英文，只需在任务栏右下角托盘图标右键选择 **退出**（或在任务管理器结束残留进程）后重新打开，即可永久从磁盘加载生效。
+## ✨ 核心突破 (v2.5)
 
-## 常见问题
+| 突破维度 | 技术机理与用户体验价值 |
+| :--- | :--- |
+| 🌐 **2,999+ 精准词条全覆盖** | 全面汉化**常规设置、应用配置、外观主题、快捷键管理、模型用量与配额、网络权限、自动化定时任务自定义周期、插件市场（Marketplace）全分类及详情页、右键菜单、浏览器自动化工具**等全部死角。 |
+| ⚡ **Tooltip 0ms 滑动防漏自愈** | 为浮层配置**微型独立私有互斥锁** + **指针移动 0ms 同步查表校准**，彻底解决在「复制、好评、差评」三键之间极速滑动切换时偶发/高频变回英文的业界技术难题。 |
+| 🔄 **全生命周期守卫 (防重启失效)** | 挂载于 Electron 全局 `app.on('web-contents-created')`，全面守卫 `dom-ready`、`did-finish-load` 与 `did-navigate-in-page`，并在 `showOrCreateWindow` 唤醒链路中注入补偿，彻底根绝“关闭重开变回英文”的托盘缓存顽疾。 |
+| 🛡️ **底层双向映射桥 (反向透传防卡死)** | 全局拦截 `Map.prototype.has` 与 `get`，当 Base UI / Radix UI 等受控组件接收到汉化后的中文选项时，自动反向透传原生英文 Key，彻底杜绝下拉菜单选不中、弹窗无法关闭、焦点锁死假死问题。 |
+| 💡 **纯值比对自愈 (弃用 WeakSet)** | 坚决抛弃有害的引用型 `WeakSet` 永久黑名单，采用纯值动态比对算法。单页应用（SPA）动态路由跳转、异步加载组件时毫秒级自动重译，绝不中途失效。 |
+| 🔒 **严格语法门禁先行** | 修改写入生产包 `app.asar` 前，强制在沙箱临时目录中执行 `node --check` 语法分析闭环，0 报错才执行原子替换，确保客户端 100% 稳定拉起。 |
+| ⚡ **零感知实时热重载** | 集成 Chrome DevTools 协议（CDP），安装完成后即时向当前活跃的页面与伴生面板广播热更新，无需立即重启即可见证汉化效果。 |
 
-- **问：官方版本自动更新后汉化失效了怎么办？**
-  - **答**：重新运行一次 `python scripts/deploy_chinese.py` 即可。若需恢复官方纯净状态，只需将同级目录下的 `app.asar.bak` 覆盖回 `app.asar`。
-- **问：为什么倒计时英文没有汉化？**
-  - **答**：为避免高频时钟渲染占位符混乱，模型用量倒计时（如 `it will fully refresh in...`）依照规范特意保持原版英文。
+---
 
-## 开源协议
+## 📊 方案对比
 
-本项目采用 [MIT 许可证](LICENSE) © 2026 renkeshui
+| 衡量维度 | 传统外挂脚本 / 简单正则 | 常见油猴/DOM 插件 | **Antigravity-Chinese-Locale (本项目)** |
+| :---: | :---: | :---: | :---: |
+| **词库完整度** | < 800 条，中英夹生严重 | 仅覆盖主聊天区 | **2,999+ 条高精词条 + 233 项受控映射 + 257 项动态规则** |
+| **重启持久性** | ❌ 退出托盘重开立即变回英文 | ❌ 需每次刷新重新注入 | **✔️ 全生命周期拦截网，重启/刷新/唤醒 100% 持久生效** |
+| **受控组件兼容** | ❌ 下拉菜单点击假死、弹窗无法关闭 | ❌ 破坏 React 内部状态 | **✔️ 原生 Map 原型链代理，双向无缝反查原生 Key** |
+| **三键滑动切换** | ❌ 滑动切换闪现英文（Good/Bad Response）| ❌ 无法监听复用 DOM 的文本流 | **✔️ 专属微型私有锁 + 0ms 指针即时校准，毫无闪烁** |
+| **运行安全性** | ❌ 偶发 SyntaxError 导致应用崩溃打不开 | ❌ characterData 循环引发 CPU 100% 卡死 | **✔️ 纯 childList 拓扑扫描 + `node --check` 语法门禁** |
+| **生效方式** | 需手动反复重启客户端 | 依赖前端注入环境 | **✔️ 本地原子生产打包 + CDP 毫秒级免重启热更新** |
 
-## 免责声明
+---
 
-本项目仅供个人学习与效率优化研究使用，非 Google 官方产品，亦未获得官方背书。
+## ⚙️ 环境要求
+
+- **操作系统**：Windows 10/11、macOS 或 Linux
+- **Google Antigravity 客户端**：任何官方版本
+- **Node.js**：v18.0.0 或更高版本（需在系统环境变量中支持 `npx`）
+- **Python**：3.8 或更高版本（仅使用 Python 标准库，**无需任何 pip 安装**）
+
+---
+
+## 🛠️ 工作原理架构
+
+```mermaid
+flowchart TD
+    A["官方纯净备份 (app.asar.bak)"] --> B["数据解耦设计 (i18n_data.json + reverse_map)"]
+    B --> C["高可用运行时引擎 (i18n_runner.js + Map 代理桥)"]
+    C --> D["全生命周期守卫 (web-contents-created + 唤醒补偿)"]
+    D --> E["静态语法门禁 (node --check)"]
+    E -->|门禁通过| F["沙箱解包打包闭环验证"]
+    F -->|验证无误| G["原子替换 app.asar 与 .unpacked"]
+    G --> H["CDP 广播活跃窗口实时热重载"]
+```
+
+---
+
+## ❓ 常见问题 & 排查 (FAQ)
+
+### Q1：安装完成后，界面已经变成中文，但关闭窗口重新打开又变回英文了？
+> **原因分析**：Antigravity 默认开启了「系统托盘常驻后台（Run in background）」。当您点击窗口右上角“X”关闭时，主进程其实并没有真正退出，内存中依然驻留着旧模块缓存。  
+> **解决办法**：
+> 1. 请在 Windows 任务栏右下角找到 Antigravity 小图标，**右键选择「Quit / 退出」**；
+> 2. （或在任务管理器中彻底结束 Antigravity 相关进程）；
+> 3. 重新从桌面或开始菜单启动客户端，即可从磁盘加载新打包的 `app.asar` 并永久生效！
+
+### Q2：如何卸载汉化，恢复为官方原版英文？
+> 本安装器在初次运行时会自动在客户端 resources 目录下创建官方原版的纯净副本 **`app.asar.bak`**。  
+> **一键恢复官方原版**：
+> 1. 进入客户端资源目录（例如 Windows 路径：`%LOCALAPPDATA%\Programs\antigravity\resources\`）；
+> 2. 将当前的 `app.asar` 删除，并将 `app.asar.bak` 重命名为 `app.asar`；
+> 3. 彻底重启客户端即可完全恢复原样。
+
+### Q3：官方客户端更新版本后汉化失效了怎么办？
+> 官方客户端更新会拉取全新的 `app.asar`。此时只需再次对您的智能体说一句话：  
+> **“帮我按照这个仓库重新汉化一下 Antigravity：https://github.com/Jet-0920/Antigravity-Chinese-Locale”**  
+> 脚本会自动重新执行全流程适配。
+
+---
+
+## 🤝 持续更新与开源贡献
+
+- 遇到未汉化的界面死角或表述不够准确？欢迎在 GitHub 提交 [Issue](https://github.com/Jet-0920/Antigravity-Chinese-Locale/issues) 或发起 [Pull Request](https://github.com/Jet-0920/Antigravity-Chinese-Locale/pulls)！
+- 欢迎给本项目点个 ⭐️ **Star**，支持我们持续维护与演进！
+
+---
+
+## 📄 开源许可证
+
+本项目基于 [MIT 许可证](LICENSE) 开源。
+
+**免责声明**：本项目为独立开源的本地化增强扩展，旨在提升中文开发者的使用体验，与 Google 官方无关。请在遵循软件许可的前提下合法合规使用。
