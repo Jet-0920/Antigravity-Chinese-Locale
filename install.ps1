@@ -26,13 +26,31 @@ try {
     exit 1
 }
 
-# 3. 运行部署脚本
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# 3. 定位脚本目录，若为在线管道执行 (irm ... | iex)，则自动拉取最新核心文件至临时沙箱
+$scriptDir = $PSScriptRoot
+if (-not $scriptDir -or -not (Test-Path (Join-Path $scriptDir "scripts\deploy_chinese.py"))) {
+    Write-Host "[*] 检测到在线即时运行模式，正在从 GitHub 获取最新部署套件..." -ForegroundColor Yellow
+    $tempDir = Join-Path $env:TEMP "antigravity_installer_$(Get-Random)"
+    $scriptsDir = Join-Path $tempDir "scripts"
+    New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
+    
+    $rawBase = "https://raw.githubusercontent.com/Jet-0920/Antigravity-Chinese-Locale/main/scripts"
+    Invoke-WebRequest -Uri "$rawBase/deploy_chinese.py" -OutFile (Join-Path $scriptsDir "deploy_chinese.py") -UseBasicParsing
+    Invoke-WebRequest -Uri "$rawBase/i18n_runner.js" -OutFile (Join-Path $scriptsDir "i18n_runner.js") -UseBasicParsing
+    Invoke-WebRequest -Uri "$rawBase/i18n_data.json" -OutFile (Join-Path $scriptsDir "i18n_data.json") -UseBasicParsing
+    
+    $scriptDir = $tempDir
+    $isTemp = $true
+}
+
 $deployScript = Join-Path $scriptDir "scripts\deploy_chinese.py"
 
 if (Test-Path $deployScript) {
     Write-Host "[*] 正在执行全生命周期持久汉化部署..." -ForegroundColor Yellow
     python $deployScript
+    if ($isTemp) {
+        Remove-Item -Path $scriptDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
 } else {
     Write-Host "[错误] 未找到 deploy_chinese.py: $deployScript" -ForegroundColor Red
     exit 1

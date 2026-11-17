@@ -1,0 +1,41 @@
+name: "🐞 界面未汉化 / 漏译死角反馈 (Bug Report)"
+description: "发现某处界面仍显示英文或翻译不准确？在此提交反馈（支持直接粘贴截图）"
+title: "[漏译反馈]: "
+labels: ["bug", "i18n-missing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢您协助完善 Antigravity 中文汉化套件！
+        💡 **极速贴士**：您也可以直接把未汉化界面的**截屏**发送给 Antigravity 对话框并说：“帮我汉化一下这里”，智能体即可自动为您实时补齐！
+  - type: input
+    id: location
+    attributes:
+      label: "未汉化位置 / 路径"
+      description: "例如：设置 -> 常规设置 -> 网络访问权限，或扩展市场详情页"
+      placeholder: "设置 -> 常规设置"
+    validations:
+      required: true
+  - type: textarea
+    id: english_text
+    attributes:
+      label: "未汉化的英文原文"
+      description: "请提供界面上显示的英文原文（若有多处可逐行填写）"
+      placeholder: "This subagent was killed and can no longer be messaged."
+    validations:
+      required: false
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "问题截图 (强烈推荐)"
+      description: "直接 Ctrl+V 粘贴截图，有图有真相处理速度最快"
+      placeholder: "在此粘贴截图..."
+    validations:
+      required: false
+  - type: input
+    id: suggested_translation
+    attributes:
+      label: "您建议的中文翻译 (选填)"
+      placeholder: "该子智能体已被终止，无法再发送消息。"
+    validations:
+      required: false

@@ -28,13 +28,32 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 echo "[✓] 检测到 Node.js: $(node -v)"
 
-# 3. 运行部署脚本
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 3. 定位脚本目录，若为在线管道执行 (curl ... | bash)，则自动拉取核心文件至临时沙箱
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+IS_TEMP=0
+
+if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/scripts/deploy_chinese.py" ]; then
+    echo "[*] 检测到在线即时运行模式，正在从 GitHub 获取最新部署套件..."
+    TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'antigravity_installer')
+    mkdir -p "$TEMP_DIR/scripts"
+    
+    RAW_BASE="https://raw.githubusercontent.com/Jet-0920/Antigravity-Chinese-Locale/main/scripts"
+    curl -fsSL "$RAW_BASE/deploy_chinese.py" -o "$TEMP_DIR/scripts/deploy_chinese.py"
+    curl -fsSL "$RAW_BASE/i18n_runner.js" -o "$TEMP_DIR/scripts/i18n_runner.js"
+    curl -fsSL "$RAW_BASE/i18n_data.json" -o "$TEMP_DIR/scripts/i18n_data.json"
+    
+    SCRIPT_DIR="$TEMP_DIR"
+    IS_TEMP=1
+fi
+
 DEPLOY_SCRIPT="$SCRIPT_DIR/scripts/deploy_chinese.py"
 
 if [ -f "$DEPLOY_SCRIPT" ]; then
     echo "[*] 正在执行全生命周期持久汉化部署..."
     "$PY_BIN" "$DEPLOY_SCRIPT"
+    if [ "$IS_TEMP" -eq 1 ]; then
+        rm -rf "$SCRIPT_DIR"
+    fi
 else
     echo "[错误] 未找到 deploy_chinese.py: $DEPLOY_SCRIPT"
     exit 1

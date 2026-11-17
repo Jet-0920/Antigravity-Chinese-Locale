@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.png" alt="Antigravity Chinese Locale Logo" width="112" height="112" style="margin-bottom: 8px;" />
+
 # 🌌 Antigravity Chinese Locale (Chinesizing)
 
 **Google Antigravity 客户端全界面企业级深度汉化与全生命周期持久化套件**
@@ -72,41 +74,47 @@
 
 ---
 
-## 💻 手动安装指南
+## 💻 快速安装指南 (人类用户专用)
 
-如果您偏好手动执行，本项目提供了各平台专属的一键式安装入口：
+如果您不想通过智能体，偏好在本地直接执行，本项目提供了三种极简方式：
 
-### 🪟 Windows 用户（两种极简方式）
+### 🚀 方式一：终端一行命令极速安装（无需手动 git clone，极力推荐）
 
-#### 方式 A：双击一键运行（最简单）
-1. 下载或克隆本仓库；
-2. 直接双击仓库根目录下的 **`install.bat`** 即可自动完成全套安装。
+打开系统终端（PowerShell 或 Terminal），直接粘贴以下一行命令回车即可：
 
-#### 方式 B：终端运行
-```powershell
-# 克隆仓库
-git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
-cd Antigravity-Chinese-Locale
+- **🪟 Windows (PowerShell)**：
+  ```powershell
+  irm https://raw.githubusercontent.com/Jet-0920/Antigravity-Chinese-Locale/main/install.ps1 | iex
+  ```
 
-# 运行安装脚本
-python scripts\deploy_chinese.py
-# 或者运行 PowerShell 脚本: .\install.ps1
-```
+- **🍎 macOS / 🐧 Linux (Bash/Zsh)**：
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/Jet-0920/Antigravity-Chinese-Locale/main/install.sh | bash
+  ```
 
 ---
 
-### 🍎 macOS / 🐧 Linux 用户
+### 🖱️ 方式二：Windows 双击一键运行
 
-在终端中执行以下命令：
+1. 点击 GitHub 绿色代码按钮选择 **[Download ZIP](https://github.com/Jet-0920/Antigravity-Chinese-Locale/archive/refs/heads/main.zip)** 下载并解压；
+2. 直接双击解压根目录下的 **`install.bat`** 即可自动完成全套安装。
+
+---
+
+### 🛠️ 方式三：常规 Git 本地克隆安装
+
 ```bash
 # 克隆仓库
 git clone https://github.com/Jet-0920/Antigravity-Chinese-Locale.git
 cd Antigravity-Chinese-Locale
 
-# 赋予执行权限并运行
-chmod +x install.sh
-./install.sh
-# 或直接运行: python3 scripts/deploy_chinese.py
+# Windows:
+python scripts\deploy_chinese.py
+# 或运行: .\install.ps1
+
+# macOS / Linux:
+chmod +x install.sh && ./install.sh
+# 或运行: python3 scripts/deploy_chinese.py
 ```
 
 ---
@@ -196,7 +204,8 @@ chmod +x install.sh
 
 ## 🤝 持续更新与开源贡献
 
-- 遇到未汉化的界面死角或表述不够准确？欢迎在 GitHub 提交 [Issue](https://github.com/Jet-0920/Antigravity-Chinese-Locale/issues) 或发起 [Pull Request](https://github.com/Jet-0920/Antigravity-Chinese-Locale/pulls)！
+- 遇到未汉化的界面死角或表述不够准确？欢迎直接阅读 [贡献指南 (CONTRIBUTING.md)](CONTRIBUTING.md) 提交 [Pull Request](https://github.com/Jet-0920/Antigravity-Chinese-Locale/pulls)！
+- 发现任何漏译死角，欢迎提交 [Issue 漏译反馈](https://github.com/Jet-0920/Antigravity-Chinese-Locale/issues)（支持直接粘贴截图）；
 - 欢迎给本项目点个 ⭐️ **Star**，支持我们持续维护与演进！
 
 ---
