@@ -2998,7 +2998,8 @@
     "Subagent stopped": "子智能体已停止",
     "Subagent killed": "子智能体已终止",
     "This subagent has completed its task.": "该子智能体已完成其任务。",
-    "This subagent has finished its task.": "该子智能体已完成其任务。"
+    "This subagent has finished its task.": "该子智能体已完成其任务。",
+    "Chinese localization setup": "Antigravity 深度汉化配置"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4263,6 +4264,10 @@
     {
       "pattern": "^(.+)\\s+was\\s+killed\\s+and\\s+can\\s+no\\s+longer\\s+be\\s+messaged\\.?$",
       "replacement": "$1 已被终止，无法再发送消息。"
+    },
+    {
+      "pattern": "^This\\s+(?:subagent|agent|worker|conversation)\\s+(?:was|has\\s+been|is)\\s+(?:killed|stopped|terminated)\\s+and\\s+can\\s+no\\s+longer\\s+be\\s+messaged\\.?$",
+      "replacement": "该子智能体已被终止，无法再发送消息。"
     }
   ],
   "exemptions": []
