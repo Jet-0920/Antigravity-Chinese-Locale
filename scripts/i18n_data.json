@@ -998,10 +998,10 @@
     "No archived conversations": "暂无已归档会话",
     "No matching conversations": "未找到匹配的会话",
     "No pinned conversations": "暂无固定会话",
-    "Pinned Conversations": "已固定的会话",
+    "Pinned Conversations": "置顶会话",
     "Search conversations": "搜索会话",
     "Conversation details unavailable": "会话详情不可用",
-    "Failed to revert conversation": "回滚会话失败",
+    "Failed to revert conversation": "回退会话失败",
     "Missing conversation ID": "缺失会话 ID",
     "You have a conversation in progress. Updating will interrupt it, and it will automatically resume once the update completes.": "当前有正在进行的会话。更新将暂时中断会话，更新完成后将自动为您恢复。",
     "You have a conversation in progress. Updating will cancel it and you'll need to manually restart it.": "当前有正在进行的会话。更新将取消当前会话，完成后您需要手动重新开始。",
@@ -2050,8 +2050,8 @@
     "Baseline model quota reached": "已达到基础模型调用配额上限",
     "Conversation Archived": "会话已归档",
     "Conversation Unarchived": "会话已取消归档",
-    "Conversation copied as Markdown to clipboard": "会话内容已按 Markdown 格式复制到剪贴板",
-    "Conversation limit reached": "已达到会话上下文长度上限",
+    "Conversation copied as Markdown to clipboard": "会话已作为 Markdown 复制到剪贴板",
+    "Conversation limit reached": "已达到会话上限",
     "Conversation unavailable": "当前会话不可用",
     "Add Hook Card": "添加生命周期钩子卡片",
     "Add MCP Server": "添加 MCP 服务端",
@@ -2063,13 +2063,13 @@
     "Configure the default width of markdown artifacts.": "配置 Markdown 制品 (Artifacts) 的默认展示宽度。",
     "Close Tabs to the Right": "关闭右侧所有标签页",
     "Close Other Tabs": "关闭其他标签页",
-    "Close split view and go to forked conversation": "关闭分屏视图并跳转至派生会话",
+    "Close split view and go to forked conversation": "关闭分屏视图并转到分支会话",
     "Clear file filter": "清除文件筛选条件",
     "Clear row filter": "清除表格行筛选",
     "Click to copy URL": "点击复制 URL 链接",
     "Click to open docs": "点击查阅官方文档",
     "Click to view or edit comment": "点击查看或编辑批注",
-    "Add screenshot to conversation": "将会话截图附加到对话中",
+    "Add screenshot to conversation": "将屏幕截图添加到会话",
     "Add inline comment": "添加行内批注",
     "Ask a quick question without interrupting the main conversation.": "发起快速侧边提问，无需打断当前主会话的智能体思路。",
     "Comment on the plan before your agent starts, and get a walkthrough when it finishes.": "在智能体开工前对计划进行批注与审核，并在任务结束时获得成果汇报讲解。",
@@ -2999,7 +2999,44 @@
     "Subagent killed": "子智能体已终止",
     "This subagent has completed its task.": "该子智能体已完成其任务。",
     "This subagent has finished its task.": "该子智能体已完成其任务。",
-    "Chinese localization setup": "Antigravity 深度汉化配置"
+    "Chinese localization setup": "Antigravity 深度汉化配置",
+    "This undo action will not make any code changes.": "本次撤回操作不会产生任何代码改动。",
+    "This undo action will not make any code changes": "本次撤回操作不会产生任何代码改动。",
+    "Confirming this undo action will make the following changes:": "确认此撤回操作将产生以下修改：",
+    "Confirming this undo action will make the following changes": "确认此撤回操作将产生以下修改：",
+    "Delete Conversation": "删除会话",
+    "Delete 会话": "删除会话",
+    "Delete Skill": "删除技能",
+    "Delete MCP Server": "删除 MCP 服务器",
+    "Delete All Remote Agents Data?": "删除所有远程智能体数据？",
+    "Delete all recordings?": "删除所有录音？",
+    "Are you sure you want to delete this conversation? This action cannot be undone.": "确定要删除此会话吗？此操作无法撤销。",
+    "Are you sure you want to delete this conversation?": "确定要删除此会话吗？",
+    "This action cannot be undone": "此操作无法撤销",
+    "This cannot be undone.": "此操作无法撤销。",
+    "This cannot be undone": "此操作无法撤销",
+    "Failed to delete conversation": "删除会话失败",
+    "Failed to delete side question": "删除侧边聊天失败",
+    "View archived in the sidebar (![filter](icon://filter_list) menu).": "可在侧边栏查看已归档内容（筛选菜单）。",
+    "View archived in the sidebar (Display options menu).": "可在侧边栏查看已归档内容（显示选项菜单）。",
+    "View archived in the sidebar": "在侧边栏查看已归档内容",
+    "archived in the sidebar ( ⌥ menu).": "侧边栏中的已归档项 ( ⌥ 菜单)。",
+    "archived in the sidebar ( ⠤ menu).": "侧边栏中的已归档项 ( ⠤ 菜单)。",
+    "archived in the sidebar": "侧边栏中的已归档项",
+    "menu).": "菜单)。",
+    " menu).": " 菜单)。",
+    "Undo": "撤销",
+    "Undo restores": "撤销还原",
+    "Undo to": "撤销至",
+    "This conversation is not on disk. Delete it to remove it from your sidebar.": "此会话不在磁盘上。将其删除即可从侧边栏中移除。",
+    "This conversation is also open in another app. Sending messages from both may cause conflicts.": "此会话已在其他应用中打开。同时发送消息可能会产生冲突。",
+    "The conversation could not be loaded because its data was not found.": "无法加载此会话，因为未找到其数据。",
+    "Couldn't mark conversations as read": "无法将所有会话标记为已读",
+    "Rename Conversation": "重命名会话",
+    "Failed to fork conversation": "分支会话失败",
+    "Failed to rename conversation": "重命名会话失败",
+    "Failed to start conversation": "启动会话失败",
+    "Failed to stop conversation": "停止会话失败"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4268,6 +4305,26 @@
     {
       "pattern": "^This\\s+(?:subagent|agent|worker|conversation)\\s+(?:was|has\\s+been|is)\\s+(?:killed|stopped|terminated)\\s+and\\s+can\\s+no\\s+longer\\s+be\\s+messaged\\.?$",
       "replacement": "该子智能体已被终止，无法再发送消息。"
+    },
+    {
+      "pattern": "^View archived in the sidebar.*$",
+      "replacement": "可在侧边栏查看已归档内容（筛选菜单）。"
+    },
+    {
+      "pattern": "^archived in the sidebar\\s*\\(.*menu\\)\\.?$",
+      "replacement": "侧边栏中的已归档项 (筛选菜单)。"
+    },
+    {
+      "pattern": "^Delete\\s+会话$",
+      "replacement": "删除会话"
+    },
+    {
+      "pattern": "^Are you sure you want to delete this conversation\\?\\s*This action cannot be undone\\.?$",
+      "replacement": "确定要删除此会话吗？此操作无法撤销。"
+    },
+    {
+      "pattern": "^This undo action will not make any code changes\\.?$",
+      "replacement": "本次撤回操作不会产生任何代码改动。"
     }
   ],
   "exemptions": []

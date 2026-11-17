@@ -2,7 +2,7 @@
 
 # Antigravity Chinese Locale
 
-**Google Antigravity 客户端全界面企业级深度汉化与全生命周期持久化套件**
+**Google Antigravity 客户端完整汉化补丁**
 
 [![Release](https://img.shields.io/badge/Release-v2.5-10B981.svg?style=flat-square)](https://github.com/Jet-0920/Antigravity-Chinese-Locale/releases)
 [![Dictionary](https://img.shields.io/badge/Dictionary-3%2C000%2B%20Terms-2563EB.svg?style=flat-square)](scripts/i18n_data.json)
@@ -12,8 +12,8 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-6366F1.svg?style=flat-square)](#运行环境要求)
 
 <p align="center">
-  彻底根除传统外挂方案的「重启还原、下拉卡死、三键滑动闪烁英文、路由跳转失效」等顽疾<br>
-  提供媲美官方原生体验的 100% 持久、流畅、高稳定的简体中文界面
+  专为 Google Antigravity 打造的中文本地化补丁。<br>
+  重点解决普通汉化常见的“重启变回英文”、“下拉菜单卡死”、“滑动时偶发闪现英文”等问题，装完即用、长久稳定。
 </p>
 
 [核心技术突破](#核心技术突破) • 
