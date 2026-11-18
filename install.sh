@@ -5,7 +5,7 @@
 set -e
 
 echo "============================================================"
-echo "  Google Antigravity 客户端一键深度汉化安装器 v2.5"
+echo "  Google Antigravity 客户端一键中文汉化安装器"
 echo "  项目主页: https://github.com/Jet-0920/Antigravity-Chinese-Locale"
 echo "============================================================"
 echo ""
@@ -33,7 +33,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
 IS_TEMP=0
 
 if [ -z "$SCRIPT_DIR" ] || [ ! -f "$SCRIPT_DIR/scripts/deploy_chinese.py" ]; then
-    echo "[*] 检测到在线即时运行模式，正在从 GitHub 获取最新部署套件..."
+    echo "[*] 检测到在线运行模式，正在从 GitHub 下载最新汉化文件..."
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'antigravity_installer')
     mkdir -p "$TEMP_DIR/scripts"
     
@@ -49,7 +49,7 @@ fi
 DEPLOY_SCRIPT="$SCRIPT_DIR/scripts/deploy_chinese.py"
 
 if [ -f "$DEPLOY_SCRIPT" ]; then
-    echo "[*] 正在执行全生命周期持久汉化部署..."
+    echo "[*] 正在安装中文汉化包..."
     "$PY_BIN" "$DEPLOY_SCRIPT"
     if [ "$IS_TEMP" -eq 1 ]; then
         rm -rf "$SCRIPT_DIR"

@@ -1,20 +1,20 @@
-name: "💡 优化建议 / 新特性需求 (Feature Request)"
-description: "提出关于汉化表达润色、自动化部署、安装体验等方面的改进建议"
-title: "[特性建议]: "
+name: "优化建议 / 功能想法 (Feature Request)"
+description: "提出关于汉化表达润色、安装体验或新功能适配的改进建议"
+title: "[建议]: "
 labels: ["enhancement"]
 body:
   - type: textarea
     id: feature_desc
     attributes:
       label: "建议或需求描述"
-      description: "清晰描述您期望改进或增加的功能特性"
-      placeholder: "例如：希望在 macOS 上提供更便捷的自动化托盘重启引导..."
+      description: "描述你的具体想法或建议"
+      placeholder: "例如：希望在某些操作提示上提供更直观的中文说明..."
     validations:
       required: true
   - type: textarea
     id: motivation
     attributes:
-      label: "使用场景与价值"
-      description: "为什么这个改进对大家有帮助？"
+      label: "为什么想要这个改动？"
+      description: "说说你的实际使用场景或遇到的问题"
     validations:
       required: false

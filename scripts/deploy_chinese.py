@@ -120,8 +120,8 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
 
 def main():
     print("=" * 60)
-    print("  Google Antigravity Chinese Localization Installer v2.0")
-    print("  Google Antigravity 客户端一键安全汉化工具 (全生命周期持久版)")
+    print("  Google Antigravity Chinese Localization Installer")
+    print("  Google Antigravity 客户端一键中文汉化工具")
     print("=" * 60)
 
     # 1. 检查 Node.js 环境
@@ -376,10 +376,9 @@ def main():
             print("[!] Hot reload notice:", e)
 
         print("\n" + "=" * 60)
-        print("  Localization deployed successfully! Enjoy Antigravity in Chinese.")
-        print("  汉化部署成功！")
-        print("  提示：若关闭窗口后重新打开仍显示英文，请在任务栏右下角系统托盘彻底退出")
-        print("  Antigravity 或在任务管理器结束残留进程后再打开，即可永久生效。")
+        print("  汉化安装成功！欢迎体验全中文版 Antigravity。")
+        print("  提示：如果关闭窗口后重新打开又变回英文，请在任务栏右下角系统托盘彻底退出")
+        print("  Antigravity 再重新打开即可永久生效。")
         print("=" * 60)
 
     finally:

@@ -29,7 +29,7 @@ if %errorlevel% neq 0 (
 )
 
 :: 3. 运行核心安装脚本
-echo [*] 正在启动全生命周期持久汉化安装引擎...
+echo [*] 正在安装中文汉化包...
 echo.
 python "%~dp0scripts\deploy_chinese.py"
 

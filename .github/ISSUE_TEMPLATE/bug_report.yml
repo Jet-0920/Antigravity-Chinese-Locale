@@ -1,4 +1,4 @@
-name: "🐞 界面未汉化 / 漏译死角反馈 (Bug Report)"
+name: "漏译反馈 / 界面还是英文 (Bug Report)"
 description: "发现某处界面仍显示英文或翻译不准确？在此提交反馈（支持直接粘贴截图）"
 title: "[漏译反馈]: "
 labels: ["bug", "i18n-missing"]
@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        感谢您协助完善 Antigravity 中文汉化套件！
-        💡 **极速贴士**：您也可以直接把未汉化界面的**截屏**发送给 Antigravity 对话框并说：“帮我汉化一下这里”，智能体即可自动为您实时补齐！
+        感谢你协助完善 Antigravity 中文汉化！
+        提示：你也可以直接把没汉化的界面截屏发给对话框里的智能体，说一句“这个地方帮我汉化一下”，它就会自动帮你补全并更新！
   - type: input
     id: location
     attributes:

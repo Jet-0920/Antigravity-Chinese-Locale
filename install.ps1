@@ -3,7 +3,7 @@
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 Write-Host "============================================================" -ForegroundColor Cyan
-Write-Host "  Google Antigravity 客户端一键深度汉化安装器 v2.5" -ForegroundColor Cyan
+Write-Host "  Google Antigravity 客户端一键中文汉化安装器" -ForegroundColor Cyan
 Write-Host "  项目主页: https://github.com/Jet-0920/Antigravity-Chinese-Locale" -ForegroundColor DarkGray
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host ""
@@ -29,7 +29,7 @@ try {
 # 3. 定位脚本目录，若为在线管道执行 (irm ... | iex)，则自动拉取最新核心文件至临时沙箱
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir -or -not (Test-Path (Join-Path $scriptDir "scripts\deploy_chinese.py"))) {
-    Write-Host "[*] 检测到在线即时运行模式，正在从 GitHub 获取最新部署套件..." -ForegroundColor Yellow
+    Write-Host "[*] 检测到在线运行模式，正在从 GitHub 下载最新汉化文件..." -ForegroundColor Yellow
     $tempDir = Join-Path $env:TEMP "antigravity_installer_$(Get-Random)"
     $scriptsDir = Join-Path $tempDir "scripts"
     New-Item -ItemType Directory -Path $scriptsDir -Force | Out-Null
@@ -46,7 +46,7 @@ if (-not $scriptDir -or -not (Test-Path (Join-Path $scriptDir "scripts\deploy_ch
 $deployScript = Join-Path $scriptDir "scripts\deploy_chinese.py"
 
 if (Test-Path $deployScript) {
-    Write-Host "[*] 正在执行全生命周期持久汉化部署..." -ForegroundColor Yellow
+    Write-Host "[*] 正在安装中文汉化包..." -ForegroundColor Yellow
     python $deployScript
     if ($isTemp) {
         Remove-Item -Path $scriptDir -Recurse -Force -ErrorAction SilentlyContinue
