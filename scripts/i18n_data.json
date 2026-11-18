@@ -3107,9 +3107,12 @@
     "Connection cancelled": "连接已取消",
     "Microphone access": "麦克风访问权限",
     "Agents running on this host will stop and its window will close.": "在此主机上运行的智能体将停止运行，其窗口也将关闭。",
-    "Shared home directory": "共享家目录 (Home Directory)",
+    "Shared home directory": "共享主目录 (Home Directory)",
     "This window opens it again once it has started.": "服务端启动完成后，此窗口将自动重新载入。",
-    "Unnamed device": "未命名设备"
+    "Unnamed device": "未命名设备",
+    "NO_STREAMS: no computer agent of that conversation is running": "无可用串流：当前会话中没有正在运行的桌面控制智能体",
+    "INVALID_DEVICE: replayed device proof": "无效设备：重放的设备凭证",
+    "UNKNOWN_SESSION: the view expired during pairing": "未知会话：预览视图在配对过程中已过期"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4494,6 +4497,10 @@
     {
       "pattern": "^(\\d+)\\s+agents stopped$",
       "replacement": "$1 个智能体已停止"
+    },
+    {
+      "pattern": "^(.+?)\\s*\\(\\+(\\d+)\\s+stopped\\)$",
+      "replacement": "$1 (+$2 个已停止)"
     }
   ],
   "exemptions": []
