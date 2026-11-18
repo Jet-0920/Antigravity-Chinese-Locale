@@ -510,8 +510,8 @@
     window.addEventListener("popstate", function() { setTimeout(translateWholePage, 50); });
     window.addEventListener("hashchange", function() { setTimeout(translateWholePage, 50); });
 
-    // Multi-turn progressive scans for React initial async rendering
-    var scanDelays = [50, 150, 300, 600, 1200, 2000, 3500, 5000];
+    // Progressive lightweight scans for React initial async rendering
+    var scanDelays = [80, 400];
     for (var k = 0; k < scanDelays.length; k++) {
         setTimeout(translateWholePage, scanDelays[k]);
     }
