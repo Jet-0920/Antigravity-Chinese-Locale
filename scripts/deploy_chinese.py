@@ -118,11 +118,128 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         if hud_js not in modified_files:
             modified_files.append(hud_js)
 
+
+def patchSwarmSidecar():
+    """汉化内置的 Swarm 集群协作看板 (Swarm Board UI)"""
+    candidate_paths = [
+        os.path.expanduser("~/.gemini/antigravity/builtin/plugins/swarm/sidecars/swarm_board"),
+        os.path.expanduser("~/.gemini/config/plugins/swarm/sidecars/swarm_board")
+    ]
+    for sb_dir in candidate_paths:
+        if not os.path.exists(sb_dir):
+            continue
+        index_html = os.path.join(sb_dir, "index.html")
+        app_js = os.path.join(sb_dir, "app.js")
+        
+        # 1. 汉化 index.html
+        if os.path.exists(index_html):
+            try:
+                with open(index_html, "r", encoding="utf-8") as f:
+                    h = f.read()
+                replacements_html = [
+                    ('<title>Swarm</title>', '<title>智能体集群协作看板</title>'),
+                    ("<p class=\"loading-caption\">Looking for this conversation's swarm…</p>", "<p class=\"loading-caption\">正在加载当前会话的智能体集群…</p>"),
+                    ('<span id="live-label" class="live-label">Live</span>', '<span id="live-label" class="live-label">实时</span>'),
+                    ('>Overview<', '>概览<'),
+                    ('>Board<', '>看板<'),
+                    ('>Members<', '>成员<'),
+                    ('>Graph<', '>关系图<'),
+                    ('>Raw<', '>原始数据<'),
+                    ('<span class="ov-label-text">overview · from the narrator’s notes</span>', '<span class="ov-label-text">概览 · 提取自记录员笔记</span>'),
+                    ('Narrator’s page</button>', '记录员页面</button>'),
+                    ('<span>Want this view different? Tell the coordinator.</span>', '<span>希望调整此视图？可告知协调员。</span>'),
+                    ('>Open coordinator chat</button>', '>打开协调员对话</button>'),
+                    ('placeholder="Search" aria-label="Search posts"', 'placeholder="搜索发言" aria-label="搜索发言"'),
+                    ('title="Filters" aria-label="Filters"', 'title="筛选" aria-label="筛选"'),
+                    ('<option value="">From anyone</option>', '<option value="">全部发言者</option>'),
+                    ('<option value="">To anyone</option>', '<option value="">提及任何人</option>'),
+                    ('<option value="">All channels</option>', '<option value="">所有频道</option>'),
+                    ('title="Keep the newest post in view"', 'title="保持最新发言在可视区域"'),
+                    ('<span>Follow</span>', '<span>跟随最新</span>'),
+                    ('title="Jump to start" aria-label="Jump to start"', 'title="跳转到开头" aria-label="跳转到开头"'),
+                    ('title="Previous post (←)" aria-label="Previous post"', 'title="上一条发言 (←)" aria-label="上一条发言"'),
+                    ('title="Play / pause replay (space)" aria-label="Play replay"', 'title="播放 / 暂停回放 (空格)" aria-label="播放回放"'),
+                    ('title="Next post (→)" aria-label="Next post"', 'title="下一条发言 (→)" aria-label="下一条发言"'),
+                    ('aria-label="Replay position" title="Scrub through board posts"', 'aria-label="回放进度" title="拖动查看发言回放"'),
+                    ('title="Show everything and follow live"', 'title="显示全部并跟随实时动态"'),
+                    ('>Live</button>', '>实时</button>'),
+                    ('title="Hide killed and inactive members from the graph"', 'title="在关系图中隐藏已终止和非活跃成员"'),
+                    ('<span>Hide inactive</span>', '<span>隐藏非活跃</span>'),
+                    ('title="Draw @all as an edge to every member"', 'title="将 @all 展开连线到所有成员"'),
+                    ('<span>Expand @all</span>', '<span>展开 @all</span>'),
+                    ('<option value="even">Even pacing</option>', '<option value="even">均匀节奏</option>'),
+                    ('<option value="real">Real-time gaps</option>', '<option value="real">真实时间间隔</option>'),
+                    ('>@mention, width = count<', '>@提及，粗细 = 频次<'),
+                    ('>via @all<', '>通过 @all 广播<'),
+                    ('>posted with no mention<', '>普通发言（未提及他人）<'),
+                    ('>@all posts, drawn by Expand @all<', '>@all 发言（展开 @all 时绘制）<'),
+                    ('title="Copy to clipboard"', 'title="复制到剪贴板"'),
+                    ('<span id="raw-copy-label">Copy</span>', '<span id="raw-copy-label">复制</span>'),
+                    ('<h2 id="empty-title" class="empty-title" data-testid="swarm-empty-title">No swarm in this conversation</h2>',
+                     '<h2 id="empty-title" class="empty-title" data-testid="swarm-empty-title">当前会话暂无智能体集群</h2>'),
+                    ('<p class="empty-hint"><span class="live-dot" aria-hidden="true"></span>Watching for a swarm</p>',
+                     '<p class="empty-hint"><span class="live-dot" aria-hidden="true"></span>等待智能体集群启动</p>')
+                ]
+                for src, rep in replacements_html:
+                    h = h.replace(src, rep)
+                with open(index_html, "w", encoding="utf-8") as f:
+                    f.write(h)
+            except Exception as e:
+                print(f"[!] Notice: Swarm board index.html patch skipped: {e}")
+
+        # 2. 汉化 app.js
+        if os.path.exists(app_js):
+            try:
+                with open(app_js, "r", encoding="utf-8") as f:
+                    a = f.read()
+                replacements_js = [
+                    (
+                        "    $('empty-body').innerHTML = conv ?\n"
+                        "        'Swarms started in this conversation appear here automatically, with their board, ' +\n"
+                        "            'members and @mention graph. Start one with <code>/swarm</code>.' :\n"
+                        "        'Open this pane from a conversation to see its swarm. Swarms started there ' +\n"
+                        "            'appear here automatically; start one with <code>/swarm</code>.';",
+                        "    $('empty-body').innerHTML = conv ?\n"
+                        "        '在当前会话中启动的智能体集群将自动显示在此处，包含协作看板、成员列表以及 @提及拓扑图。可以通过 <code>/swarm</code> 发起协作。' :\n"
+                        "        '从正在进行智能体协作的会话中打开此面板以查看其集群动态。在此处发起集群请使用 <code>/swarm</code>。';"
+                    ),
+                    (
+                        "const STATUS_LABEL = { working: 'Active', waiting: 'Waiting', killed: 'Killed' };",
+                        "const STATUS_LABEL = { working: '活跃中', waiting: '待命', killed: '已终止' };"
+                    ),
+                    (
+                        "STATUS_TIP = { working: 'Active: mid-turn (thinking, running a tool, or waiting on the model)', waiting: 'Waiting: turn ended, asleep on the board until a post wakes it', killed: 'Killed: removed from the swarm' };",
+                        "STATUS_TIP = { working: '活跃：执行中（思考、调用工具或等待模型响应）', waiting: '待命：轮次结束，休眠等待看板新消息唤醒（不消耗 Token）', killed: '已终止：已从集群中移除' };"
+                    ),
+                    (
+                        '<div class="feed-empty-title">No posts match</div>',
+                        '<div class="feed-empty-title">无匹配发言</div>'
+                    ),
+                    (
+                        '<div class="feed-empty-title">No posts yet</div>',
+                        '<div class="feed-empty-title">暂无发言</div>'
+                    ),
+                    (
+                        "label.textContent = 'Copied';",
+                        "label.textContent = '已复制';"
+                    )
+                ]
+                for src, rep in replacements_js:
+                    a = a.replace(src, rep)
+                with open(app_js, "w", encoding="utf-8") as f:
+                    f.write(a)
+                print(f"[✓] Swarm board sidecar localized: {sb_dir}")
+            except Exception as e:
+                print(f"[!] Notice: Swarm board app.js patch skipped: {e}")
+
 def main():
     print("=" * 60)
     print("  Google Antigravity Chinese Localization Installer")
     print("  Google Antigravity 客户端一键中文汉化工具")
     print("=" * 60)
+
+    # 0. 汉化内置插件 (如 Swarm Board)
+    patchSwarmSidecar()
 
     # 1. 检查 Node.js 环境
     try:

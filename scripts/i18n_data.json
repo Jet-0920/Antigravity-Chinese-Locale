@@ -1802,8 +1802,8 @@
     "➔ @mention, width = count": "➔ @提及，线条粗细 = 交互频次",
     "- - ➔ via @all": "- - ➔ 通过 @all 广播",
     "◌ posted with no mention": "◌ 未提及任何人的发言",
-    "Watching for a swarm": "正在等待 Swarm 团队加入",
-    "No swarm in this conversation": "当前会话暂无 Swarm 团队",
+    "Watching for a swarm": "等待智能体集群启动",
+    "No swarm in this conversation": "当前会话暂无智能体集群",
     "Looking for this conversation's swarm…": "正在查找此会话的 Swarm…",
     "From anyone": "来自任何人",
     "To anyone": "发送给任何人",
@@ -3161,7 +3161,17 @@
     "within it": "",
     "Delete project": "删除项目",
     "Delete Project?": "删除项目？",
-    "Delete project?": "删除项目？"
+    "Delete project?": "删除项目？",
+    "no swarm in this conversation": "当前会话暂无智能体集群",
+    "watching for a swarm": "等待智能体集群启动",
+    "• Watching for a swarm": "• 等待智能体集群启动",
+    "Swarms started in this conversation appear here automatically, with their board, members and @mention graph. Start one with /swarm .": "在当前会话中启动的智能体集群将自动显示在此处，包含协作看板、成员列表以及 @提及拓扑图。可以通过 /swarm 发起协作。",
+    "Swarms started in this conversation appear here automatically, with their board, members and @mention graph. Start one with /swarm.": "在当前会话中启动的智能体集群将自动显示在此处，包含协作看板、成员列表以及 @提及拓扑图。可以通过 /swarm 发起协作。",
+    "Swarms started in this conversation appear here automatically, with their board, members and @mention graph. Start one with ": "在当前会话中启动的智能体集群将自动显示在此处，包含协作看板、成员列表以及 @提及关系图。可以通过 ",
+    "Open this pane from a conversation to see its swarm. Swarms started there appear here automatically; start one with /swarm.": "从正在进行智能体协作的会话中打开此面板以查看其集群动态。在此处发起集群请使用 /swarm。",
+    "Start one with /swarm .": "可以通过 /swarm 发起协作。",
+    "Start one with /swarm.": "可以通过 /swarm 发起协作。",
+    "Start one with /swarm": "通过 /swarm 发起协作"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4582,6 +4592,14 @@
     {
       "pattern": "^archived\\s+in\\s+the\\s+sidebar(?:\\s*\\((.*?)\\))?\\.?$",
       "replacement": "侧边栏中的已归档项（$1）。"
+    },
+    {
+      "pattern": "^Swarms started in this conversation appear here automatically.+?Start one with\\s*(?:<code>)?/swarm(?:</code>)?\\.?$",
+      "replacement": "在当前会话中启动的智能体集群将自动显示在此处，包含协作看板、成员列表以及 @提及拓扑图。可以通过 /swarm 发起协作。"
+    },
+    {
+      "pattern": "^Open this pane from a conversation to see its swarm.+?start one with\\s*(?:<code>)?/swarm(?:</code>)?\\.?$",
+      "replacement": "从正在进行智能体协作的会话中打开此面板以查看其集群动态。在此处发起集群请使用 /swarm。"
     }
   ],
   "exemptions": []
