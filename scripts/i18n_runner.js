@@ -159,7 +159,7 @@
         archive: "归档", unarchive: "取消归档", settings: "设置", setting: "设置",
         name: "名称", copy: "复制", rename: "重命名", pin: "置顶", unpin: "取消置顶",
         duplicate: "副本", path: "路径",
-        edit: "编辑", title: "标题", titles: "标题",
+        delete: "删除", edit: "编辑", title: "标题", titles: "标题",
         downloads: "下载", download: "下载", screenshot: "截图", external: "外部",
         forward: "前进", reload: "刷新", certificate: "证书", secure: "安全",
         stop: "停止", execution: "执行", record: "录制", audio: "音频",
@@ -300,23 +300,23 @@
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
         // D. 精确查表
-        if (exactMap[trimmed]) {
+        if (exactMap[trimmed] !== undefined) {
             return lead + exactMap[trimmed] + trail;
         }
 
         // D2. 空白折叠规范化查表 (处理长句子、换行 \n 或连续空格段落)
         var collapsed = trimmed.replace(/\s+/g, " ");
-        if (exactMap[collapsed]) {
+        if (exactMap[collapsed] !== undefined) {
             return lead + exactMap[collapsed] + trail;
         }
 
         // D3. 小写自愈查表
         var lowerKey = trimmed.toLowerCase();
-        if (exactMap[lowerKey]) {
+        if (exactMap[lowerKey] !== undefined) {
             return lead + exactMap[lowerKey] + trail;
         }
         var lowerCollapsed = collapsed.toLowerCase();
-        if (exactMap[lowerCollapsed]) {
+        if (exactMap[lowerCollapsed] !== undefined) {
             return lead + exactMap[lowerCollapsed] + trail;
         }
 
