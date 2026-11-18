@@ -3036,7 +3036,38 @@
     "Failed to fork conversation": "分支会话失败",
     "Failed to rename conversation": "重命名会话失败",
     "Failed to start conversation": "启动会话失败",
-    "Failed to stop conversation": "停止会话失败"
+    "Failed to stop conversation": "停止会话失败",
+    "AGY Desktop HUD": "AGY 桌面控制指示器",
+    "AGY is controlling your Mac": "AGY 正在控制您的电脑",
+    "AGY is controlling your PC": "AGY 正在控制您的电脑",
+    "AGY is controlling your computer": "AGY 正在控制您的电脑",
+    "is controlling your computer": "正在控制您的电脑",
+    "is controlling your Mac": "正在控制您的电脑",
+    "is controlling your PC": "正在控制您的电脑",
+    "Resume": "恢复",
+    "Stopped": "已停止",
+    "Enable macOS Permissions": "启用 macOS 权限",
+    "macOS Permissions Ready": "macOS 权限就绪",
+    "1. Accessibility": "1. 辅助功能",
+    "2. Screen Recording": "2. 屏幕录制",
+    "Granted ✓": "已授权 ✓",
+    "Missing": "未授权",
+    "Needs relaunch": "需重启生效",
+    "Open Accessibility settings": "打开辅助功能设置",
+    "Open Screen Recording settings": "打开屏幕录制设置",
+    "Accessibility settings": "辅助功能设置",
+    "Screen Recording settings": "屏幕录制设置",
+    "Open ↗": "打开 ↗",
+    "Settings ↗": "设置 ↗",
+    "Relaunch the app once to activate Screen Recording.": "重启一次应用以激活屏幕录制权限。",
+    "✓ macOS permissions granted": "✓ macOS 权限已全部授予",
+    "macOS permissions granted": "macOS 权限已全部授予",
+    "Click ": "点击 ",
+    " to open macOS Privacy & Security.": " 以打开系统的隐私与安全性设置。",
+    "Relaunch app": "重启应用",
+    "Relaunch App": "重启应用",
+    "Connect to WSL": "连接到 WSL",
+    "Reopen Locally": "在本地重新打开"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4325,6 +4356,18 @@
     {
       "pattern": "^This undo action will not make any code changes\\.?$",
       "replacement": "本次撤回操作不会产生任何代码改动。"
+    },
+    {
+      "pattern": "^AGY is controlling your (?:Mac|PC|computer)\\.?$",
+      "replacement": "AGY 正在控制您的电脑"
+    },
+    {
+      "pattern": "^(?:Click\\s+)?Open\\s+↗\\s+to\\s+open\\s+macOS\\s+Privacy\\s+&\\s+Security\\.?$",
+      "replacement": "点击“打开 ↗”以打开系统的隐私与安全性设置。"
+    },
+    {
+      "pattern": "^Relaunch the app once to activate Screen Recording\\.?$",
+      "replacement": "重启一次应用以激活屏幕录制权限。"
     }
   ],
   "exemptions": []

@@ -98,6 +98,26 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         if main_js not in modified_files:
             modified_files.append(main_js)
 
+    # 4. 汉化 dist/computer/hud.js (v2.33+ AGY Desktop HUD 桌面控制悬浮指示器)
+    hud_js = os.path.join(dist_dir, "computer", "hud.js")
+    if os.path.exists(hud_js):
+        with open(hud_js, "r", encoding="utf-8") as f:
+            h_content = f.read()
+        
+        h_content = h_content.replace("<title>AGY Desktop HUD</title>", "<title>AGY 桌面控制指示器</title>")
+        h_content = h_content.replace('<div id="status">AGY is controlling your Mac</div>', '<div id="status">AGY 正在控制您的电脑</div>')
+        h_content = h_content.replace('<div id="status">AGY is controlling your PC</div>', '<div id="status">AGY 正在控制您的电脑</div>')
+        h_content = h_content.replace('<div id="status">AGY is controlling your computer</div>', '<div id="status">AGY 正在控制您的电脑</div>')
+        h_content = h_content.replace('<button id="stop">Stop</button><button id="resume">Resume</button>', '<button id="stop">停止</button><button id="resume">恢复</button>')
+        h_content = h_content.replace("end.textContent = 'Stopped';", "end.textContent = '已停止';")
+        h_content = h_content.replace("end.textContent = 'Stop';", "end.textContent = '停止';")
+        h_content = h_content.replace("title: 'AGY Desktop HUD'", "title: 'AGY 桌面控制指示器'")
+        
+        with open(hud_js, "w", encoding="utf-8") as f:
+            f.write(h_content)
+        if hud_js not in modified_files:
+            modified_files.append(hud_js)
+
 def main():
     print("=" * 60)
     print("  Google Antigravity Chinese Localization Installer v2.0")
