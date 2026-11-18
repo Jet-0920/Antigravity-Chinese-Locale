@@ -3067,7 +3067,49 @@
     "Relaunch app": "重启应用",
     "Relaunch App": "重启应用",
     "Connect to WSL": "连接到 WSL",
-    "Reopen Locally": "在本地重新打开"
+    "Reopen Locally": "在本地重新打开",
+    "AGY working in the background": "Antigravity 正在后台运行",
+    "Agent paused — you have control": "智能体已暂停 — 您已接管控制权",
+    "Agent idle": "智能体空闲",
+    "Agent stopped": "智能体已停止",
+    "AGENT_PAUSED: the user took over this agent": "智能体已暂停：用户已接管该智能体",
+    "USER_TAKEOVER": "用户接管",
+    "APP_NEEDS_PERMISSION": "应用需要授权",
+    "APP_NOT_ALLOWED": "应用不允许被控制",
+    "APP_NOT_FOUND": "未找到该应用程序",
+    "URL_NEEDS_PERMISSION": "访问该 URL 需要授权",
+    "URL_POLICY_BLOCKED": "受策略限制禁止访问该 URL",
+    "KEY_DENIED": "按键模拟被拒绝",
+    "SYSTEM_HOTKEY_DENIED": "系统热键被禁止模拟",
+    "SECURE_FIELD_REFUSED": "安全输入框 (密码域) 禁止自动化录入",
+    "SCREEN_LOCKED": "屏幕已锁定",
+    "Accept updated host keys?": "是否接受已更新的主机密钥？",
+    "Accept updated hostkeys?": "是否接受已更新的主机密钥？",
+    "Touch your security key": "请轻触您的硬件安全密钥",
+    "Confirm new password": "确认新密码",
+    "Current password": "当前密码",
+    "New password": "新密码",
+    "The authenticity of host can't be established.": "无法确认主机的真实性。",
+    "The authenticity of host cannot be established.": "无法确认主机的真实性。",
+    "Choose an SSH config file": "选择 SSH 配置文件",
+    "Choose another SSH config file": "选择其他 SSH 配置文件",
+    "Choose Another File…": "选择其他文件…",
+    "Choose Another File...": "选择其他文件…",
+    "Restart SSH server": "重启 SSH 服务端",
+    "Stop SSH server": "停止 SSH 服务端",
+    "Stop Server": "停止服务端",
+    "Could not restart the SSH server": "无法重启 SSH 服务端",
+    "Could not stop the SSH server": "无法停止 SSH 服务端",
+    "SSH connection failed": "SSH 连接失败",
+    "Reconnect failed": "重新连接失败",
+    "Restart failed": "重启失败",
+    "Connection cancelled.": "连接已取消。",
+    "Connection cancelled": "连接已取消",
+    "Microphone access": "麦克风访问权限",
+    "Agents running on this host will stop and its window will close.": "在此主机上运行的智能体将停止运行，其窗口也将关闭。",
+    "Shared home directory": "共享家目录 (Home Directory)",
+    "This window opens it again once it has started.": "服务端启动完成后，此窗口将自动重新载入。",
+    "Unnamed device": "未命名设备"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4368,6 +4410,90 @@
     {
       "pattern": "^Relaunch the app once to activate Screen Recording\\.?$",
       "replacement": "重启一次应用以激活屏幕录制权限。"
+    },
+    {
+      "pattern": "^Connect to (.+) anyway\\?$",
+      "replacement": "仍要连接至 $1 吗？"
+    },
+    {
+      "pattern": "^Trust (.+)\\?$",
+      "replacement": "信任主机 $1？"
+    },
+    {
+      "pattern": "^Question from (.+)$",
+      "replacement": "来自 $1 的提问"
+    },
+    {
+      "pattern": "^Enter PIN for (.+)$",
+      "replacement": "请输入 $1 的 PIN 码"
+    },
+    {
+      "pattern": "^Verification code for (.+)$",
+      "replacement": "请输入 $1 的验证码"
+    },
+    {
+      "pattern": "^Add key (.+) to agent\\?$",
+      "replacement": "是否将密钥 $1 添加到 SSH Agent？"
+    },
+    {
+      "pattern": "^Not connected to (.+)$",
+      "replacement": "未连接到 $1"
+    },
+    {
+      "pattern": "^Allow (.+) to use your microphone\\?$",
+      "replacement": "是否允许 $1 使用您的麦克风？"
+    },
+    {
+      "pattern": "^Sign in to your organization for (.+)\\?$",
+      "replacement": "是否为 $1 登录您的组织机构账号？"
+    },
+    {
+      "pattern": "^Finish this sign-in on (.+)\\?$",
+      "replacement": "是否在 $1 上完成本次登录？"
+    },
+    {
+      "pattern": "^Stop the Antigravity server on (.+)\\?$",
+      "replacement": "确定停止 $1 上的 Antigravity 服务端吗？"
+    },
+    {
+      "pattern": "^Disconnected from (.+)$",
+      "replacement": "已断开与 $1 的连接"
+    },
+    {
+      "pattern": "^Reconnecting to (.+)\\.\\.\\.$",
+      "replacement": "正在重新连接至 $1…"
+    },
+    {
+      "pattern": "^Reconnecting to (.+)…$",
+      "replacement": "正在重新连接至 $1…"
+    },
+    {
+      "pattern": "^Restarting the Antigravity server on (.+)\\.\\.\\.$",
+      "replacement": "正在重启 $1 上的 Antigravity 服务端…"
+    },
+    {
+      "pattern": "^Restarting the Antigravity server on (.+)…$",
+      "replacement": "正在重启 $1 上的 Antigravity 服务端…"
+    },
+    {
+      "pattern": "^Agents keep running on (.+)\\.$",
+      "replacement": "智能体将继续在 $1 上保持运行。"
+    },
+    {
+      "pattern": "^Agents keep running on (.+) unless its server stopped\\.$",
+      "replacement": "除非服务端停止，否则智能体将持续在 $1 上运行。"
+    },
+    {
+      "pattern": "^Its server on (.+) stopped, and its agents with it\\.$",
+      "replacement": "$1 上的服务端已停止，其关联的智能体亦随之停止。"
+    },
+    {
+      "pattern": "^(\\d+)\\s+AGY agents working$",
+      "replacement": "$1 个 Antigravity 智能体正在运行"
+    },
+    {
+      "pattern": "^(\\d+)\\s+agents stopped$",
+      "replacement": "$1 个智能体已停止"
     }
   ],
   "exemptions": []
