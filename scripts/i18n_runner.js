@@ -159,7 +159,7 @@
         archive: "归档", unarchive: "取消归档", settings: "设置", setting: "设置",
         name: "名称", copy: "复制", rename: "重命名", pin: "置顶", unpin: "取消置顶",
         duplicate: "副本", path: "路径",
-        delete: "删除", edit: "编辑", title: "标题", titles: "标题",
+        quote: "引用", delete: "删除", edit: "编辑", title: "标题", titles: "标题",
         downloads: "下载", download: "下载", screenshot: "截图", external: "外部",
         forward: "前进", reload: "刷新", certificate: "证书", secure: "安全",
         stop: "停止", execution: "执行", record: "录制", audio: "音频",
