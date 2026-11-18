@@ -3112,7 +3112,18 @@
     "Unnamed device": "未命名设备",
     "NO_STREAMS: no computer agent of that conversation is running": "无可用串流：当前会话中没有正在运行的桌面控制智能体",
     "INVALID_DEVICE: replayed device proof": "无效设备：重放的设备凭证",
-    "UNKNOWN_SESSION: the view expired during pairing": "未知会话：预览视图在配对过程中已过期"
+    "UNKNOWN_SESSION: the view expired during pairing": "未知会话：预览视图在配对过程中已过期",
+    "Open Keyboard Shortcuts": "打开键盘快捷键",
+    "open keyboard shortcuts": "打开键盘快捷键",
+    "Open keyboard shortcuts": "打开键盘快捷键",
+    "Open Keyboard Shortcut": "打开键盘快捷键",
+    "Side Question Selection": "对选中文本发起侧边聊天",
+    "side question selection": "对选中文本发起侧边聊天",
+    "Side question selection": "对选中文本发起侧边聊天",
+    "Side Question on Selection": "对选中文本发起侧边聊天",
+    "Side Question from Selection": "对选中文本发起侧边聊天",
+    "Ask Side Question on Selection": "对选中文本发起侧边聊天",
+    "Start Side Question from Selection": "对选中文本发起侧边聊天"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4501,6 +4512,18 @@
     {
       "pattern": "^(.+?)\\s*\\(\\+(\\d+)\\s+stopped\\)$",
       "replacement": "$1 (+$2 个已停止)"
+    },
+    {
+      "pattern": "^Open Keyboard Shortcuts\\.?$",
+      "replacement": "打开键盘快捷键"
+    },
+    {
+      "pattern": "^Side Question Selection\\.?$",
+      "replacement": "对选中文本发起侧边聊天"
+    },
+    {
+      "pattern": "^(?:Ask\\s+)?Side\\s+Question\\s+(?:on|from)?\\s*Selection\\.?$",
+      "replacement": "对选中文本发起侧边聊天"
     }
   ],
   "exemptions": []
