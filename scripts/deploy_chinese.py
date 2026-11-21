@@ -92,13 +92,18 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         main_c = main_c.replace("label: `Open ${electron_1.app.getName()}`", "label: `打开 ${electron_1.app.getName()}`")
         main_c = main_c.replace("label: 'Quit'", "label: '退出'")
         main_c = main_c.replace("label: 'New Window'", "label: '新建窗口'")
+        main_c = main_c.replace("title: 'Confirm Quit'", "title: '确认退出'")
+        main_c = main_c.replace("message: 'Are you sure you want to quit?'", "message: '确定要退出 Antigravity 吗？'")
+        main_c = main_c.replace("detail: 'There may be agents or background tasks running.'", "detail: '当前可能仍有智能体或后台任务正在运行。'")
+        main_c = main_c.replace("title: 'WSL distro not found'", "title: '未找到 WSL 发行版'")
+        main_c = main_c.replace("detail: 'Antigravity opened on Windows instead.'", "detail: 'Antigravity 已改为在 Windows 原生环境中打开。'")
         
         with open(main_js, "w", encoding="utf-8") as f:
             f.write(main_c)
         if main_js not in modified_files:
             modified_files.append(main_js)
 
-    # 4. 汉化 dist/computer/hud.js (v2.33+ AGY Desktop HUD 桌面控制悬浮指示器)
+    # 4. 汉化 dist/computer/hud.js 与 dist/computer/hudState.js (v2.33 / v2.34+ 桌面控制悬浮指示器)
     hud_js = os.path.join(dist_dir, "computer", "hud.js")
     if os.path.exists(hud_js):
         with open(hud_js, "r", encoding="utf-8") as f:
@@ -108,7 +113,8 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         h_content = h_content.replace('<div id="status">AGY is controlling your Mac</div>', '<div id="status">AGY 正在控制您的电脑</div>')
         h_content = h_content.replace('<div id="status">AGY is controlling your PC</div>', '<div id="status">AGY 正在控制您的电脑</div>')
         h_content = h_content.replace('<div id="status">AGY is controlling your computer</div>', '<div id="status">AGY 正在控制您的电脑</div>')
-        h_content = h_content.replace('<button id="stop">Stop</button><button id="resume">Resume</button>', '<button id="stop">停止</button><button id="resume">恢复</button>')
+        h_content = re.sub(r'<button id="stop"[^>]*>Stop</button>', '<button id="stop">停止</button>', h_content)
+        h_content = re.sub(r'<button id="resume"[^>]*>.*?</button>', '<button id="resume" title="允许智能体再次控制电脑。已停止的任务不会自动恢复。">再次允许</button>', h_content)
         h_content = h_content.replace("end.textContent = 'Stopped';", "end.textContent = '已停止';")
         h_content = h_content.replace("end.textContent = 'Stop';", "end.textContent = '停止';")
         h_content = h_content.replace("title: 'AGY Desktop HUD'", "title: 'AGY 桌面控制指示器'")
@@ -117,6 +123,23 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
             f.write(h_content)
         if hud_js not in modified_files:
             modified_files.append(hud_js)
+
+    hud_state_js = os.path.join(dist_dir, "computer", "hudState.js")
+    if os.path.exists(hud_state_js):
+        with open(hud_state_js, "r", encoding="utf-8") as f:
+            hs_content = f.read()
+        hs_content = hs_content.replace("'You took over — agent stopped'", "'您已接管操作 — 智能体已停止'")
+        hs_content = hs_content.replace("'Agent stopped'", "'智能体已停止'")
+        hs_content = hs_content.replace("'Agent idle'", "'智能体待命'")
+        hs_content = hs_content.replace("`AGY working in ${name} (background)`", "`AGY 正在 ${name} 中后台运行`")
+        hs_content = hs_content.replace("'AGY working in the background'", "'AGY 正在后台运行'")
+        hs_content = hs_content.replace("'AGY is controlling your Mac'", "'AGY 正在控制您的电脑'")
+        hs_content = hs_content.replace("'AGY is controlling your PC'", "'AGY 正在控制您的电脑'")
+        hs_content = hs_content.replace("'AGY is controlling your computer'", "'AGY 正在控制您的电脑'")
+        with open(hud_state_js, "w", encoding="utf-8") as f:
+            f.write(hs_content)
+        if hud_state_js not in modified_files:
+            modified_files.append(hud_state_js)
 
 
 def patchSwarmSidecar():
