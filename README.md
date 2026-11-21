@@ -5,7 +5,7 @@
 **Google Antigravity 客户端中文汉化补丁**
 
 [![Release](https://img.shields.io/badge/Release-v2.5-10B981.svg?style=flat-square)](https://github.com/Jet-0920/Antigravity-Chinese-Locale/releases)
-[![Dictionary](https://img.shields.io/badge/Dictionary-3%2C310%2B%20Terms-2563EB.svg?style=flat-square)](scripts/i18n_data.json)
+[![Dictionary](https://img.shields.io/badge/Dictionary-3%2C740%2B%20Terms-2563EB.svg?style=flat-square)](scripts/i18n_data.json)
 [![Hot Reload](https://img.shields.io/badge/Hot%20Reload-Supported-059669.svg?style=flat-square)](#核心特色)
 [![License](https://img.shields.io/badge/License-MIT-4B5563.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-6366F1.svg?style=flat-square)](#运行环境要求)
