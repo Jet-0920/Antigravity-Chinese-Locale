@@ -4029,7 +4029,14 @@
     "Mute Antigravity (Alt+Shift+M)": "静音 Antigravity (Alt+Shift+M)",
     "Unmute Antigravity (Alt+Shift+M)": "取消静音 Antigravity (Alt+Shift+M)",
     "Mute Jetski (Alt+Shift+M)": "静音 Jetski (Alt+Shift+M)",
-    "Unmute Jetski (Alt+Shift+M)": "取消静音 Jetski (Alt+Shift+M)"
+    "Unmute Jetski (Alt+Shift+M)": "取消静音 Jetski (Alt+Shift+M)",
+    "Permission preset": "权限预设",
+    "permission preset": "权限预设",
+    "2h ago": "2 小时前",
+    "1h ago": "1 小时前",
+    "3h ago": "3 小时前",
+    "4h ago": "4 小时前",
+    "5h ago": "5 小时前"
   },
   "reverse_map": {
     "始终询问": "Always Ask",

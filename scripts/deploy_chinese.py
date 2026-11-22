@@ -408,6 +408,8 @@ def main():
             u_content = f.read()
 
         inject_code_def = (
+            "const _fs = require('fs');\n"
+            "const _path = require('path');\n"
             "let _cachedAntigravityI18nScript = null;\n"
             "let _lastI18nMtime = 0;\n"
             "const getPhysicalResourcesPath = () => {\n"
@@ -416,27 +418,27 @@ def main():
             "        const electron = require('electron');\n"
             "        if (electron && electron.app && electron.app.isPackaged) return process.resourcesPath;\n"
             "    } catch(e) {}\n"
-            "    try { return path_1.default.resolve(__dirname, '../../'); } catch(e) { return ''; }\n"
+            "    try { return _path.resolve(__dirname, '../../'); } catch(e) { return ''; }\n"
             "};\n"
             "const getAntigravityI18nScript = (forceReload = false) => {\n"
             "    try {\n"
-            "        const runnerPath = path_1.default.join(__dirname, 'i18n_runner.js');\n"
-            "        const asarDataPath = path_1.default.join(__dirname, 'i18n_data.json');\n"
+            "        const runnerPath = _path.join(__dirname, 'i18n_runner.js');\n"
+            "        const asarDataPath = _path.join(__dirname, 'i18n_data.json');\n"
             "        const resDir = getPhysicalResourcesPath();\n"
-            "        const liveDataPath = resDir ? path_1.default.join(resDir, 'i18n_live.json') : '';\n"
+            "        const liveDataPath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
             "        let targetDataPath = asarDataPath;\n"
-            "        if (liveDataPath && fs.existsSync(liveDataPath)) {\n"
+            "        if (liveDataPath && _fs.existsSync(liveDataPath)) {\n"
             "            targetDataPath = liveDataPath;\n"
             "        }\n"
-            "        if (fs.existsSync(runnerPath) && fs.existsSync(targetDataPath)) {\n"
-            "            const stat1 = fs.statSync(runnerPath);\n"
-            "            const stat2 = fs.statSync(targetDataPath);\n"
+            "        if (_fs.existsSync(runnerPath) && _fs.existsSync(targetDataPath)) {\n"
+            "            const stat1 = _fs.statSync(runnerPath);\n"
+            "            const stat2 = _fs.statSync(targetDataPath);\n"
             "            const currentMtime = Math.max(stat1.mtimeMs, stat2.mtimeMs);\n"
             "            if (!forceReload && _cachedAntigravityI18nScript && _lastI18nMtime === currentMtime) {\n"
             "                return _cachedAntigravityI18nScript;\n"
             "            }\n"
-            "            const dataStr = fs.readFileSync(targetDataPath, 'utf-8');\n"
-            "            const runnerCode = fs.readFileSync(runnerPath, 'utf-8');\n"
+            "            const dataStr = _fs.readFileSync(targetDataPath, 'utf-8');\n"
+            "            const runnerCode = _fs.readFileSync(runnerPath, 'utf-8');\n"
             "            _cachedAntigravityI18nScript = `\n"
             "                (function(){\n"
             "                    try {\n"
@@ -479,12 +481,12 @@ def main():
             "const setupLiveWatch = () => {\n"
             "    try {\n"
             "        const resDir = getPhysicalResourcesPath();\n"
-            "        const livePath = resDir ? path_1.default.join(resDir, 'i18n_live.json') : '';\n"
+            "        const livePath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
             "        if (!livePath) return;\n"
             "        const broadcastNewData = (attempt = 1) => {\n"
             "            try {\n"
-            "                if (!fs.existsSync(livePath)) return;\n"
-            "                const raw = fs.readFileSync(livePath, 'utf-8');\n"
+            "                if (!_fs.existsSync(livePath)) return;\n"
+            "                const raw = _fs.readFileSync(livePath, 'utf-8');\n"
             "                if (!raw || !raw.trim()) throw new Error('Empty file content');\n"
             "                const dataObj = JSON.parse(raw);\n"
             "                if (!dataObj || !dataObj.exact || Object.keys(dataObj.exact).length < 100) {\n"
@@ -519,8 +521,8 @@ def main():
             "                }\n"
             "            }\n"
             "        };\n"
-            "        if (fs.existsSync(livePath)) {\n"
-            "            fs.watchFile(livePath, { interval: 600 }, (curr, prev) => {\n"
+            "        if (_fs.existsSync(livePath)) {\n"
+            "            _fs.watchFile(livePath, { interval: 600 }, (curr, prev) => {\n"
             "                if (curr.mtimeMs <= prev.mtimeMs) return;\n"
             "                if (_hotReloadDebounceTimer) clearTimeout(_hotReloadDebounceTimer);\n"
             "                _hotReloadDebounceTimer = setTimeout(() => { broadcastNewData(1); }, 350);\n"
@@ -534,32 +536,37 @@ def main():
             "exports.injectAntigravityI18n = injectAntigravityI18n;\n"
         )
 
-        if "injectAntigravityI18n" not in u_content:
-            u_content = inject_code_def + "\n" + u_content
+        if "injectAntigravityI18n" in u_content:
+            u_content = re.sub(
+                r"(?:const _fs = require\('fs'\);[\s\S]*?|let _cachedAntigravityI18nScript[\s\S]*?)exports\.injectAntigravityI18n = injectAntigravityI18n;\s*",
+                "",
+                u_content
+            )
+        u_content = inject_code_def + "\n" + u_content
 
-            needle_hub = "registerWindowWebContents(win, hubContents);"
-            needle_old = "win.webContents.setWindowOpenHandler"
-            if needle_hub in u_content:
-                hub_hook = (
-                    "registerWindowWebContents(win, hubContents);\n"
-                    "    hubContents.on('dom-ready', () => injectAntigravityI18n(hubContents));\n"
-                    "    hubContents.on('did-finish-load', () => injectAntigravityI18n(hubContents));\n"
-                    "    hubContents.on('did-navigate-in-page', () => injectAntigravityI18n(hubContents));\n"
-                    "    if (win.webContents) {\n"
-                    "        win.webContents.on('dom-ready', () => injectAntigravityI18n(win.webContents));\n"
-                    "        win.webContents.on('did-finish-load', () => injectAntigravityI18n(win.webContents));\n"
-                    "        win.webContents.on('did-navigate-in-page', () => injectAntigravityI18n(win.webContents));\n"
-                    "    }"
-                )
-                u_content = u_content.replace(needle_hub, hub_hook, 1)
-            elif needle_old in u_content:
-                old_hook = (
-                    "win.webContents.on('dom-ready', () => injectAntigravityI18n(win.webContents));\n"
-                    "    win.webContents.on('did-finish-load', () => injectAntigravityI18n(win.webContents));\n"
-                    "    win.webContents.on('did-navigate-in-page', () => injectAntigravityI18n(win.webContents));\n"
-                    "    " + needle_old
-                )
-                u_content = u_content.replace(needle_old, old_hook, 1)
+        needle_hub = "registerWindowWebContents(win, hubContents);"
+        needle_old = "win.webContents.setWindowOpenHandler"
+        if needle_hub in u_content:
+            hub_hook = (
+                "registerWindowWebContents(win, hubContents);\n"
+                "    hubContents.on('dom-ready', () => injectAntigravityI18n(hubContents));\n"
+                "    hubContents.on('did-finish-load', () => injectAntigravityI18n(hubContents));\n"
+                "    hubContents.on('did-navigate-in-page', () => injectAntigravityI18n(hubContents));\n"
+                "    if (win.webContents) {\n"
+                "        win.webContents.on('dom-ready', () => injectAntigravityI18n(win.webContents));\n"
+                "        win.webContents.on('did-finish-load', () => injectAntigravityI18n(win.webContents));\n"
+                "        win.webContents.on('did-navigate-in-page', () => injectAntigravityI18n(win.webContents));\n"
+                "    }"
+            )
+            u_content = u_content.replace(needle_hub, hub_hook, 1)
+        elif needle_old in u_content and "injectAntigravityI18n(win.webContents)" not in u_content:
+            old_hook = (
+                "win.webContents.on('dom-ready', () => injectAntigravityI18n(win.webContents));\n"
+                "    win.webContents.on('did-finish-load', () => injectAntigravityI18n(win.webContents));\n"
+                "    win.webContents.on('did-navigate-in-page', () => injectAntigravityI18n(win.webContents));\n"
+                "    " + needle_old
+            )
+            u_content = u_content.replace(needle_old, old_hook, 1)
 
             show_needle = "wins[0].focus();"
             if show_needle in u_content:

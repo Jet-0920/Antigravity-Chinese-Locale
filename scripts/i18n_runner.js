@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 2.5;
+    var RUNNER_VERSION = 2.6;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -73,9 +73,21 @@
         while (curr && curr !== document.body && curr !== document.documentElement) {
             if (curr.nodeType === 1) {
                 var tag = curr.tagName;
+                // 若当前节点或其父级是按钮或明确的 UI 控制控件（如代码块右上角的复制按钮），绝不排除
+                if (tag === "BUTTON" || (curr.getAttribute && curr.getAttribute("role") === "button")) {
+                    return false;
+                }
+                var cls = curr.className;
+                if (typeof cls === "string" && (
+                    cls.indexOf("copy") !== -1 ||
+                    cls.indexOf("overlay") !== -1 ||
+                    cls.indexOf("popup") !== -1 ||
+                    cls.indexOf("tooltip") !== -1
+                )) {
+                    return false;
+                }
                 if (EXCLUDED_TAGS[tag]) return true;
                 if (curr.isContentEditable) return true;
-                var cls = curr.className;
                 if (typeof cls === "string" && (
                     cls.indexOf("monaco-editor") !== -1 ||
                     cls.indexOf("token") !== -1 ||
@@ -470,6 +482,48 @@
         }
     }
 
+    // 3.6 专属右键上下文菜单与浮动浮层毫秒级捕获引擎 (Context Menu & Overlay Engine)
+    function fastTranslateOverlay(el) {
+        if (!el) return;
+        translateSubtree(el);
+    }
+
+    function hookOverlayContainer(el) {
+        if (!el || el.nodeType !== 1 || el.__antigravity_overlay_hooked) return;
+        el.__antigravity_overlay_hooked = true;
+
+        var isOverlayBusy = false;
+        var obs = new MutationObserver(function () {
+            if (isOverlayBusy) return;
+            isOverlayBusy = true;
+            try {
+                fastTranslateOverlay(el);
+            } finally {
+                isOverlayBusy = false;
+            }
+        });
+
+        obs.observe(el, {
+            characterData: true,
+            childList: true,
+            subtree: true
+        });
+
+        fastTranslateOverlay(el);
+    }
+
+    function syncCorrectOverlays() {
+        // 全量侦测右键上下文菜单、Portal 浮层、弹出菜单项、弹窗
+        var overlays = document.querySelectorAll(
+            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [role="dialog"], [data-radix-popper-content-wrapper], [data-floating-ui-portal]'
+        );
+        for (var i = 0; i < overlays.length; i++) {
+            hookOverlayContainer(overlays[i]);
+            fastTranslateOverlay(overlays[i]);
+        }
+        syncCorrectTooltips();
+    }
+
     function translateSubtree(root) {
         if (!root) return;
         if (root.nodeType === 3) {
@@ -488,6 +542,11 @@
                 for (var nt = 0; nt < nestedTooltips.length; nt++) {
                     hookTooltipContainer(nestedTooltips[nt]);
                 }
+            }
+
+            // 自动侦测右键上下文菜单与浮层容器
+            if (root.getAttribute && (root.getAttribute("data-testid") === "context-menu-popup" || (root.className && typeof root.className === "string" && root.className.indexOf("agy-overlay") !== -1))) {
+                hookOverlayContainer(root);
             }
 
             translateElementAttributes(root);
@@ -509,7 +568,7 @@
         if (target) {
             translateSubtree(target);
         }
-        syncCorrectTooltips();
+        syncCorrectOverlays();
     }
     window.__antigravity_translateWholePage = translateWholePage;
 
@@ -538,17 +597,31 @@
             translateWholePage();
         }, 50);
     }
-    document.addEventListener("click", scheduleAutoHeal, true);
-    document.addEventListener("pointerdown", scheduleAutoHeal, true);
+
+    // 右键上下文菜单与浮层专属即时捕获触发器 (捕获阶段拦截，0ms/20ms/80ms/200ms 四级递进，确保 React Portal 动画与挂载 100% 捕获)
+    function triggerOverlayHeal() {
+        syncCorrectOverlays();
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(syncCorrectOverlays);
+        }
+        setTimeout(syncCorrectOverlays, 20);
+        setTimeout(syncCorrectOverlays, 80);
+        setTimeout(syncCorrectOverlays, 200);
+    }
+
+    document.addEventListener("contextmenu", triggerOverlayHeal, true);
+    document.addEventListener("pointerdown", triggerOverlayHeal, true);
+    document.addEventListener("mousedown", triggerOverlayHeal, true);
+    document.addEventListener("click", triggerOverlayHeal, true);
     document.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === "Escape" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-            scheduleAutoHeal();
+            triggerOverlayHeal();
         }
     }, true);
 
     // 指针滑动与悬停双重捕获，实现 0ms 即时校准
-    document.addEventListener("pointermove", syncCorrectTooltips, { passive: true, capture: true });
-    document.addEventListener("mouseover", syncCorrectTooltips, { passive: true, capture: true });
+    document.addEventListener("pointermove", syncCorrectOverlays, { passive: true, capture: true });
+    document.addEventListener("mouseover", syncCorrectOverlays, { passive: true, capture: true });
 
     // 5. High-Performance MutationObserver (childList only, strictly prevents characterData recursion)
     var isTranslating = false;
@@ -686,5 +759,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v2.5 successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v2.6 successfully initialized and active.");
 })();
