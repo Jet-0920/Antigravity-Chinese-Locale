@@ -255,6 +255,74 @@ def patchSwarmSidecar():
             except Exception as e:
                 print(f"[!] Notice: Swarm board app.js patch skipped: {e}")
 
+def broadcast_cdp(script_dir):
+    """尝试通过 Chrome DevTools Protocol 广播热更新至当前运行的所有页面"""
+    try:
+        active_port_file = os.path.join(os.environ.get("APPDATA", ""), "Antigravity", "DevToolsActivePort")
+        if not os.path.exists(active_port_file):
+            return 0
+        with open(active_port_file, "r") as f:
+            dt_port = f.readline().strip()
+        with urllib.request.urlopen(f"http://127.0.0.1:{dt_port}/json", timeout=2) as resp:
+            targets = json.loads(resp.read().decode("utf-8"))
+            
+        with open(os.path.join(script_dir, "i18n_data.json"), "r", encoding="utf-8") as f:
+            dt_str = f.read()
+        with open(os.path.join(script_dir, "i18n_runner.js"), "r", encoding="utf-8") as f:
+            rn_str = f.read()
+        
+        full_code = (
+            "window.__ANTIGRAVITY_I18N_DATA__ = " + dt_str + ";\n" +
+            rn_str + "\n" +
+            "if (typeof window.__antigravity_reload_i18n === 'function') { window.__antigravity_reload_i18n(window.__ANTIGRAVITY_I18N_DATA__); }" +
+            "else if (typeof window.__antigravity_translateWholePage === 'function') { window.__antigravity_translateWholePage(); }"
+        )
+        
+        hot_targets = [t for t in targets if t.get("webSocketDebuggerUrl") and (
+            t.get("type") == "page" or "swarm--swarm_board" in t.get("url", "")
+        )]
+        
+        if hot_targets:
+            node_eval = f'''
+            const targets = {json.dumps(hot_targets)};
+            const fullCode = {json.dumps(full_code)};
+            let done = 0;
+            targets.forEach(t => {{
+                try {{
+                    const ws = new WebSocket(t.webSocketDebuggerUrl);
+                    ws.onopen = () => {{
+                        ws.send(JSON.stringify({{
+                            id: 1,
+                            method: "Runtime.evaluate",
+                            params: {{ expression: fullCode }}
+                        }}));
+                        setTimeout(() => {{
+                            try {{ ws.close(); }} catch(e) {{}}
+                            done++;
+                            if (done >= targets.length) process.exit(0);
+                        }}, 200);
+                    }};
+                    ws.onerror = () => {{
+                        done++;
+                        if (done >= targets.length) process.exit(0);
+                    }};
+                }} catch (e) {{
+                    done++;
+                    if (done >= targets.length) process.exit(0);
+                }}
+            }});
+            setTimeout(() => process.exit(0), 2000);
+            '''
+            eval_file = os.path.join(tempfile.gettempdir(), "cdp_hot_reload.js")
+            with open(eval_file, "w", encoding="utf-8") as f:
+                f.write(node_eval)
+            subprocess.run(["node", eval_file], capture_output=True)
+            print(f"[✓] Successfully broadcasted hot-reload to {len(hot_targets)} targets (pages & swarm iframes)!")
+            return len(hot_targets)
+    except Exception as e:
+        print("[!] CDP hot reload notice:", e)
+    return 0
+
 def main():
     print("=" * 60)
     print("  Google Antigravity Chinese Localization Installer")
@@ -307,6 +375,19 @@ def main():
         print("[Error] Missing i18n_runner.js or i18n_data.json in scripts directory.")
         sys.exit(1)
 
+    # 检查是否为极速热更新模式 (--hot)
+    is_hot = "--hot" in sys.argv or "-h" in sys.argv
+    if is_hot:
+        print("[*] 正在执行极速无缝热更新 (--hot模式)...")
+        live_json = os.path.join(resources_dir, "i18n_live.json")
+        shutil.copy2(i18n_data_src, live_json)
+        print(f"[✓] 外部物理热重载源已就绪: {live_json}")
+        broadcast_cdp(script_dir)
+        print("=" * 60)
+        print("  [✓] 极速热更新完成！修改已推送至物理热更新源与全部活跃页面。")
+        print("=" * 60)
+        return
+
     npx_bin = "npx.cmd" if sys.platform == "win32" else "npx"
     work_dir = tempfile.mkdtemp(prefix="antigravity_i18n_")
     try:
@@ -329,29 +410,46 @@ def main():
         inject_code_def = (
             "let _cachedAntigravityI18nScript = null;\n"
             "let _lastI18nMtime = 0;\n"
+            "const getPhysicalResourcesPath = () => {\n"
+            "    try {\n"
+            "        if (typeof process !== 'undefined' && process.resourcesPath) return process.resourcesPath;\n"
+            "        const electron = require('electron');\n"
+            "        if (electron && electron.app && electron.app.isPackaged) return process.resourcesPath;\n"
+            "    } catch(e) {}\n"
+            "    try { return path_1.default.resolve(__dirname, '../../'); } catch(e) { return ''; }\n"
+            "};\n"
             "const getAntigravityI18nScript = (forceReload = false) => {\n"
             "    try {\n"
-            "        const runnerPath = path_1.default.join(__dirname, \"i18n_runner.js\");\n"
-            "        const dataPath = path_1.default.join(__dirname, \"i18n_data.json\");\n"
-            "        if (fs.existsSync(runnerPath) && fs.existsSync(dataPath)) {\n"
+            "        const runnerPath = path_1.default.join(__dirname, 'i18n_runner.js');\n"
+            "        const asarDataPath = path_1.default.join(__dirname, 'i18n_data.json');\n"
+            "        const resDir = getPhysicalResourcesPath();\n"
+            "        const liveDataPath = resDir ? path_1.default.join(resDir, 'i18n_live.json') : '';\n"
+            "        let targetDataPath = asarDataPath;\n"
+            "        if (liveDataPath && fs.existsSync(liveDataPath)) {\n"
+            "            targetDataPath = liveDataPath;\n"
+            "        }\n"
+            "        if (fs.existsSync(runnerPath) && fs.existsSync(targetDataPath)) {\n"
             "            const stat1 = fs.statSync(runnerPath);\n"
-            "            const stat2 = fs.statSync(dataPath);\n"
+            "            const stat2 = fs.statSync(targetDataPath);\n"
             "            const currentMtime = Math.max(stat1.mtimeMs, stat2.mtimeMs);\n"
             "            if (!forceReload && _cachedAntigravityI18nScript && _lastI18nMtime === currentMtime) {\n"
             "                return _cachedAntigravityI18nScript;\n"
             "            }\n"
-            "            const dataStr = fs.readFileSync(dataPath, \"utf-8\");\n"
-            "            const runnerCode = fs.readFileSync(runnerPath, \"utf-8\");\n"
+            "            const dataStr = fs.readFileSync(targetDataPath, 'utf-8');\n"
+            "            const runnerCode = fs.readFileSync(runnerPath, 'utf-8');\n"
             "            _cachedAntigravityI18nScript = `\n"
             "                (function(){\n"
             "                    try {\n"
-            "                        window.__ANTIGRAVITY_I18N_DATA__ = ${JSON.stringify(JSON.parse(dataStr))};\n"
+            "                        var _i18n_data = ${JSON.stringify(JSON.parse(dataStr))};\n"
+            "                        window.__ANTIGRAVITY_I18N_DATA__ = _i18n_data;\n"
             "                        ${runnerCode}\n"
-            "                        if (typeof window.__antigravity_translateWholePage === 'function') {\n"
+            "                        if (typeof window.__antigravity_reload_i18n === 'function') {\n"
+            "                            window.__antigravity_reload_i18n(_i18n_data);\n"
+            "                        } else if (typeof window.__antigravity_translateWholePage === 'function') {\n"
             "                            window.__antigravity_translateWholePage();\n"
             "                        }\n"
             "                    } catch(e) {\n"
-            "                        console.error(\"[Antigravity i18n] Error executing i18n runner:\", e);\n"
+            "                        console.error('[Antigravity i18n] Error executing i18n runner:', e);\n"
             "                    }\n"
             "                })();\n"
             "            `;\n"
@@ -359,43 +457,80 @@ def main():
             "            return _cachedAntigravityI18nScript;\n"
             "        }\n"
             "    } catch (e) {\n"
-            "        console.error(\"[Antigravity i18n] Pre-cache error:\", e);\n"
+            "        console.error('[Antigravity i18n] Pre-cache error:', e);\n"
             "    }\n"
             "    return null;\n"
             "};\n"
             "const injectAntigravityI18n = (target, force = false) => {\n"
             "    try {\n"
             "        const wc = target?.webContents ? target.webContents : target;\n"
-            "        if (!wc || typeof wc.executeJavaScript !== \"function\" || wc.isDestroyed?.()) return;\n"
-            "        const url = wc.getURL ? wc.getURL() : \"\";\n"
-            "        if (typeof url === \"string\" && url.startsWith(\"data:text/html\") && url.includes(\"logo-pulse\")) return;\n"
+            "        if (!wc || typeof wc.executeJavaScript !== 'function' || wc.isDestroyed?.()) return;\n"
+            "        const url = wc.getURL ? wc.getURL() : '';\n"
+            "        if (typeof url === 'string' && url.startsWith('data:text/html') && url.includes('logo-pulse')) return;\n"
             "        const script = getAntigravityI18nScript(force);\n"
             "        if (script) {\n"
             "            wc.executeJavaScript(script).catch(() => {});\n"
             "        }\n"
             "    } catch (e) {\n"
-            "        console.error(\"[Antigravity i18n] Injection error:\", e);\n"
+            "        console.error('[Antigravity i18n] Injection error:', e);\n"
             "    }\n"
             "};\n"
-            "try {\n"
-            "    const dataPath = path_1.default.join(__dirname, \"i18n_data.json\");\n"
-            "    if (fs.existsSync(dataPath)) {\n"
-            "        fs.watchFile(dataPath, { interval: 800 }, () => {\n"
+            "let _hotReloadDebounceTimer = null;\n"
+            "const setupLiveWatch = () => {\n"
+            "    try {\n"
+            "        const resDir = getPhysicalResourcesPath();\n"
+            "        const livePath = resDir ? path_1.default.join(resDir, 'i18n_live.json') : '';\n"
+            "        if (!livePath) return;\n"
+            "        const broadcastNewData = (attempt = 1) => {\n"
             "            try {\n"
-            "                const script = getAntigravityI18nScript(true);\n"
-            "                if (script) {\n"
-            "                    const electron = require(\"electron\");\n"
-            "                    const wins = electron.BrowserWindow ? electron.BrowserWindow.getAllWindows() : [];\n"
-            "                    wins.forEach(win => {\n"
-            "                        if (win && win.webContents && !win.webContents.isDestroyed()) {\n"
-            "                            win.webContents.executeJavaScript(script).catch(() => {});\n"
-            "                        }\n"
-            "                    });\n"
+            "                if (!fs.existsSync(livePath)) return;\n"
+            "                const raw = fs.readFileSync(livePath, 'utf-8');\n"
+            "                if (!raw || !raw.trim()) throw new Error('Empty file content');\n"
+            "                const dataObj = JSON.parse(raw);\n"
+            "                if (!dataObj || !dataObj.exact || Object.keys(dataObj.exact).length < 100) {\n"
+            "                    throw new Error('Validation failed');\n"
             "                }\n"
-            "            } catch(e) {}\n"
-            "        });\n"
+            "                const dispatchScript = `\n"
+            "                    (function() {\n"
+            "                        try {\n"
+            "                            var d = ${JSON.stringify(dataObj)};\n"
+            "                            if (typeof window.__antigravity_reload_i18n === 'function') {\n"
+            "                                window.__antigravity_reload_i18n(d);\n"
+            "                            } else if (typeof window.__antigravity_translateWholePage === 'function') {\n"
+            "                                window.__ANTIGRAVITY_I18N_DATA__ = d;\n"
+            "                                window.__antigravity_translateWholePage();\n"
+            "                            }\n"
+            "                        } catch(e) {\n"
+            "                            console.error('[Antigravity i18n Hot-Reload Error]', e);\n"
+            "                        }\n"
+            "                    })();\n"
+            "                `;\n"
+            "                const electron = require('electron');\n"
+            "                const wins = electron.BrowserWindow ? electron.BrowserWindow.getAllWindows() : [];\n"
+            "                wins.forEach(win => {\n"
+            "                    if (win && win.webContents && !win.webContents.isDestroyed()) {\n"
+            "                        win.webContents.executeJavaScript(dispatchScript).catch(() => {});\n"
+            "                    }\n"
+            "                });\n"
+            "                console.log('[Antigravity i18n] Hot-reload successfully broadcasted to ' + wins.length + ' windows.');\n"
+            "            } catch (err) {\n"
+            "                if (attempt < 3) {\n"
+            "                    setTimeout(() => broadcastNewData(attempt + 1), 250);\n"
+            "                }\n"
+            "            }\n"
+            "        };\n"
+            "        if (fs.existsSync(livePath)) {\n"
+            "            fs.watchFile(livePath, { interval: 600 }, (curr, prev) => {\n"
+            "                if (curr.mtimeMs <= prev.mtimeMs) return;\n"
+            "                if (_hotReloadDebounceTimer) clearTimeout(_hotReloadDebounceTimer);\n"
+            "                _hotReloadDebounceTimer = setTimeout(() => { broadcastNewData(1); }, 350);\n"
+            "            });\n"
+            "        }\n"
+            "    } catch(e) {\n"
+            "        console.error('[Antigravity i18n] setupLiveWatch error:', e);\n"
             "    }\n"
-            "} catch(e) {}\n"
+            "};\n"
+            "setupLiveWatch();\n"
             "exports.injectAntigravityI18n = injectAntigravityI18n;\n"
         )
 
@@ -496,73 +631,21 @@ def main():
         shutil.copy2(temp_pack, target_asar)
         print("[✓] Production app.asar successfully updated!")
 
-        # 8. 尝试 CDP 实时全量热注入（覆盖所有 page 与 swarm 插件 iframe）
+        # 7.1 初始化外部物理热更新源 (resources/i18n_live.json)
         try:
-            active_port_file = os.path.join(os.environ.get("APPDATA", ""), "Antigravity", "DevToolsActivePort")
-            if os.path.exists(active_port_file):
-                with open(active_port_file, "r") as f:
-                    dt_port = f.readline().strip()
-                with urllib.request.urlopen(f"http://127.0.0.1:{dt_port}/json", timeout=2) as resp:
-                    targets = json.loads(resp.read().decode("utf-8"))
-                    
-                    with open(os.path.join(dist_dir, "i18n_data.json"), "r", encoding="utf-8") as f:
-                        dt_str = f.read()
-                    with open(os.path.join(dist_dir, "i18n_runner.js"), "r", encoding="utf-8") as f:
-                        rn_str = f.read()
-                    
-                    full_code = (
-                        "window.__ANTIGRAVITY_I18N_DATA__ = " + dt_str + ";\n" +
-                        rn_str + "\n" +
-                        "if (typeof window.__antigravity_translateWholePage === 'function') { window.__antigravity_translateWholePage(); }"
-                    )
-                    
-                    hot_targets = [t for t in targets if t.get("webSocketDebuggerUrl") and (
-                        t.get("type") == "page" or "swarm--swarm_board" in t.get("url", "")
-                    )]
-                    
-                    if hot_targets:
-                        node_eval = f'''
-                        const targets = {json.dumps(hot_targets)};
-                        const fullCode = {json.dumps(full_code)};
-                        let done = 0;
-                        targets.forEach(t => {{
-                            try {{
-                                const ws = new WebSocket(t.webSocketDebuggerUrl);
-                                ws.onopen = () => {{
-                                    ws.send(JSON.stringify({{
-                                        id: 1,
-                                        method: "Runtime.evaluate",
-                                        params: {{ expression: fullCode }}
-                                    }}));
-                                    setTimeout(() => {{
-                                        try {{ ws.close(); }} catch(e) {{}}
-                                        done++;
-                                        if (done >= targets.length) process.exit(0);
-                                    }}, 200);
-                                }};
-                                ws.onerror = () => {{
-                                    done++;
-                                    if (done >= targets.length) process.exit(0);
-                                }};
-                            }} catch (e) {{
-                                done++;
-                                if (done >= targets.length) process.exit(0);
-                            }}
-                        }});
-                        setTimeout(() => process.exit(0), 2000);
-                        '''
-                        eval_file = os.path.join(tempfile.gettempdir(), "cdp_hot_reload.js")
-                        with open(eval_file, "w", encoding="utf-8") as f:
-                            f.write(node_eval)
-                        subprocess.run(["node", eval_file], capture_output=True)
-                        print(f"[✓] Successfully broadcasted hot-reload to {len(hot_targets)} targets (pages & swarm iframes)!")
+            live_json = os.path.join(resources_dir, "i18n_live.json")
+            shutil.copy2(i18n_data_src, live_json)
+            print(f"[✓] Live hot-reload dictionary initialized: {live_json}")
         except Exception as e:
-            print("[!] Hot reload notice:", e)
+            print("[!] Warning initializing live json:", e)
+
+        # 8. 尝试 CDP 实时全量热注入（覆盖所有 page 与 swarm 插件 iframe）
+        broadcast_cdp(script_dir)
 
         print("\n" + "=" * 60)
-        print("  汉化安装成功！欢迎体验全中文版 Antigravity。")
-        print("  提示：如果关闭窗口后重新打开又变回英文，请在任务栏右下角系统托盘彻底退出")
-        print("  Antigravity 再重新打开即可永久生效。")
+        print("  汉化部署成功！欢迎体验全中文版 Antigravity。")
+        print("  [✓] 外部物理热重载源 (resources/i18n_live.json) 已就绪！")
+        print("  [✓] 全量无感热刷新已生效：修改词库即可即时无感呈现。")
         print("=" * 60)
 
     finally:

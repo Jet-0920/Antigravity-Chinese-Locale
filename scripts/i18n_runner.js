@@ -21,9 +21,11 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 2.4;
+    var RUNNER_VERSION = 2.5;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
-        if (typeof window.__antigravity_translateWholePage === 'function') {
+        if (typeof window.__antigravity_reload_i18n === 'function') {
+            window.__antigravity_reload_i18n(data);
+        } else if (typeof window.__antigravity_translateWholePage === 'function') {
             window.__antigravity_translateWholePage();
         }
         return;
@@ -174,6 +176,11 @@
     function autoTranslateTitle(str, node) {
         if (!str || str.length < 3 || str.length > 70) return null;
         if (/[\u4e00-\u9fa5]/.test(str)) return null;
+
+        var lowerStr = str.trim().toLowerCase();
+        if (lowerStr === "voice speed") {
+            return "语速";
+        }
 
         var words = str.trim().split(/[\s_-]+/);
         if (words.length < 2 || words.length > 8) return null;
@@ -575,5 +582,109 @@
     }
     startObserving();
 
-    console.log("[Antigravity i18n] Localization runner v2.4 successfully initialized and active.");
+    /**
+     * 闭环自愈平滑重译算法 (Heal and Re-translate DOM)
+     * 利用 reverseMap 反查界面上已呈现的旧中文回英文，再匹配新词库就地热纠偏，实现 0 页面重载即时更新
+     */
+    function healAndReTranslateDOM(root, reverseMap, exactMap) {
+        if (!root) return;
+        try {
+            var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+            var node;
+            while ((node = walker.nextNode())) {
+                var val = node.nodeValue;
+                if (!val || !val.trim()) continue;
+                var trimmed = val.trim();
+
+                // 1. 若为旧中文，通过 reverseMap 反查出英文 Key
+                var engKey = reverseMap[trimmed];
+                if (engKey && exactMap[engKey]) {
+                    var targetZh = exactMap[engKey];
+                    if (targetZh !== trimmed) {
+                        var lead = val.match(/^\s*/)[0];
+                        var trail = val.match(/\s*$/)[0];
+                        node.nodeValue = lead + targetZh + trail;
+                    }
+                } else if (exactMap[trimmed] && exactMap[trimmed] !== trimmed) {
+                    // 2. 直接支持针对当前中文的纠偏映射（如 "音色 speed" -> "语速"）
+                    var lead2 = val.match(/^\s*/)[0];
+                    var trail2 = val.match(/\s*$/)[0];
+                    node.nodeValue = lead2 + exactMap[trimmed] + trail2;
+                }
+            }
+
+            // 同步就地纠偏属性
+            var attrNodes = root.querySelectorAll("[placeholder], [title], [aria-label], [data-tooltip-content]");
+            for (var i = 0; i < attrNodes.length; i++) {
+                var el = attrNodes[i];
+                var attrs = ["placeholder", "title", "aria-label", "data-tooltip-content"];
+                for (var a = 0; a < attrs.length; a++) {
+                    var attr = attrs[a];
+                    if (el.hasAttribute(attr)) {
+                        var attrVal = el.getAttribute(attr);
+                        if (attrVal) {
+                            var tAttr = attrVal.trim();
+                            var eng = reverseMap[tAttr];
+                            if (eng && exactMap[eng] && exactMap[eng] !== tAttr) {
+                                el.setAttribute(attr, exactMap[eng]);
+                            } else if (exactMap[tAttr] && exactMap[tAttr] !== tAttr) {
+                                el.setAttribute(attr, exactMap[tAttr]);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("[Antigravity i18n] healAndReTranslateDOM error:", e);
+        }
+    }
+
+    /**
+     * 全局无感热重载入口函数 (0 页面刷新，0 状态丢失)
+     */
+    window.__antigravity_reload_i18n = function(newData) {
+        if (!newData || typeof newData !== 'object') return;
+        try {
+            var oldExact = window.__ANTIGRAVITY_EXACT__ || {};
+            var oldReverse = window.__ANTIGRAVITY_REVERSE_MAP__ || {};
+
+            var newExact = newData.exact || {};
+            var newReverse = newData.reverse_map || {};
+            var newRules = [];
+            if (Array.isArray(newData.regex_rules)) {
+                for (var i = 0; i < newData.regex_rules.length; i++) {
+                    try {
+                        newRules.push({
+                            re: new RegExp(newData.regex_rules[i].pattern),
+                            rep: newData.regex_rules[i].replacement
+                        });
+                    } catch (e) {}
+                }
+            }
+            var newExemptions = newData.exemptions || [];
+
+            // 1. 原子更新核心全局存储
+            window.__ANTIGRAVITY_EXACT__ = newExact;
+            window.__ANTIGRAVITY_REGEX_RULES__ = newRules;
+            window.__ANTIGRAVITY_EXEMPTIONS__ = newExemptions;
+
+            // 2. 双向融合保留反向映射表（保留旧反向映射作为自愈桥梁）
+            window.__ANTIGRAVITY_REVERSE_MAP__ = Object.assign({}, oldReverse, newReverse);
+
+            // 3. 执行闭环自愈平滑重译与全页扫描
+            healAndReTranslateDOM(document.body || document.documentElement, oldReverse, newExact);
+            translateWholePage();
+
+            console.log("[Antigravity i18n Hot-Reload] Successfully reloaded live dictionary and healed DOM.");
+        } catch(e) {
+            console.error("[Antigravity i18n Hot-Reload] Reload error:", e);
+        }
+    };
+
+    // 暴露核心方法供主进程与外部调用
+    window.__antigravity_getTranslatedText = getTranslatedText;
+    window.__antigravity_translateWholePage = translateWholePage;
+    window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
+
+    console.log("[Antigravity i18n] Localization runner v2.5 successfully initialized and active.");
 })();

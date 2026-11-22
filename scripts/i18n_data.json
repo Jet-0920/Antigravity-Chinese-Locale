@@ -4014,7 +4014,22 @@
     "image.png": "图片.png",
     "image.jpg": "图片.jpg",
     "image.jpeg": "图片.jpeg",
-    "image.webp": "图片.webp"
+    "image.webp": "图片.webp",
+    "音色 speed": "语速",
+    "Voice speed, 1x": "语速：1x",
+    "Voice Speed, 1x": "语速：1x",
+    "Voice speed, 1.5x": "语速：1.5x",
+    "Voice Speed, 1.5x": "语速：1.5x",
+    "Voice speed, 2x": "语速：2x",
+    "Voice Speed, 2x": "语速：2x",
+    "Voice speed, 0.75x": "语速：0.75x",
+    "Voice Speed, 0.75x": "语速：0.75x",
+    "Mute mic (Alt+M)": "静音麦克风 (Alt+M)",
+    "Unmute mic (Alt+M)": "取消麦克风静音 (Alt+M)",
+    "Mute Antigravity (Alt+Shift+M)": "静音 Antigravity (Alt+Shift+M)",
+    "Unmute Antigravity (Alt+Shift+M)": "取消静音 Antigravity (Alt+Shift+M)",
+    "Mute Jetski (Alt+Shift+M)": "静音 Jetski (Alt+Shift+M)",
+    "Unmute Jetski (Alt+Shift+M)": "取消静音 Jetski (Alt+Shift+M)"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4293,6 +4308,18 @@
     "撤销到此处": "Undo to Here"
   },
   "regex_rules": [
+    {
+      "pattern": "^Stopped voice chat\\s*[\\u00b7·\\.]\\s*(.+)$",
+      "replacement": "已结束语音对话 · $1"
+    },
+    {
+      "pattern": "^Started voice chat\\s*[\\u00b7·\\.]\\s*(.+)$",
+      "replacement": "已开启语音对话 · $1"
+    },
+    {
+      "pattern": "^(?:Voice\\s+speed|Voice\\s+Speed),\\s*(\\d+(?:\\.\\d+)?x?)$",
+      "replacement": "语速：$1"
+    },
     {
       "pattern": "^(\\d+)\\s*y\\s+ago$",
       "replacement": "$1 年前"
