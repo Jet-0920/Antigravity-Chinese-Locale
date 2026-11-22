@@ -149,7 +149,7 @@
         in: "在", and: "与", for: "的", with: "带", to: "到",
         now: "刚刚", today: "今天", yesterday: "昨天",
         checkout: "检出", worktree: "工作树", verbose: "详细",
-        connector: "连接器", connectors: "连接器", voice: "音色",
+        connector: "连接器", connectors: "连接器", voice: "音色", speed: "语速",
         steps: "步骤", step: "步骤", history: "历史", audit: "审查",
         subagent: "子智能体", subagents: "子智能体", workspace: "工作区",
         tool: "工具", tools: "工具", rule: "规则", rules: "规则",

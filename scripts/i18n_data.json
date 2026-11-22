@@ -3973,7 +3973,33 @@
     "Search by filename or semantic keyword": "按文件名或语义关键词搜索",
     "search by filename or semantic keyword": "按文件名或语义关键词搜索",
     "Search syntax: use @file, @symbol, or #rule to refine queries": "搜索语法：使用 @file、@symbol 或 #rule 细化查询",
-    "search syntax: use @file, @symbol, or #rule to refine queries": "搜索语法：使用 @file、@symbol 或 #rule 细化查询"
+    "search syntax: use @file, @symbol, or #rule to refine queries": "搜索语法：使用 @file、@symbol 或 #rule 细化查询",
+    "End": "结束",
+    "end": "结束",
+    "End Live chat": "结束实时对话",
+    "end live chat": "结束实时对话",
+    "end voice mode": "结束语音模式",
+    "Voice speed": "语速",
+    "voice speed": "语速",
+    "Voice Speed": "语速",
+    "Speed": "速度",
+    "speed": "速度",
+    "Mute mic": "静音麦克风",
+    "mute mic": "静音麦克风",
+    "Unmute mic": "取消麦克风静音",
+    "unmute mic": "取消麦克风静音",
+    "Mute Antigravity": "静音 Antigravity",
+    "mute antigravity": "静音 Antigravity",
+    "Unmute Antigravity": "取消静音 Antigravity",
+    "unmute antigravity": "取消静音 Antigravity",
+    "Mute Jetski": "静音 Jetski",
+    "mute jetski": "静音 Jetski",
+    "Unmute Jetski": "取消静音 Jetski",
+    "unmute jetski": "取消静音 Jetski",
+    "Started voice chat": "已开启语音对话",
+    "started voice chat": "已开启语音对话",
+    "Stopped voice chat": "已结束语音对话",
+    "stopped voice chat": "已结束语音对话"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4239,9 +4265,55 @@
     "分屏差异视图": "Split diff view",
     "区分大小写": "Match Case",
     "全字匹配": "Match Whole Word",
-    "使用正则表达式": "Use Regular Expression"
+    "使用正则表达式": "Use Regular Expression",
+    "结束": "End",
+    "语速": "Voice speed",
+    "静音麦克风": "Mute mic",
+    "取消麦克风静音": "Unmute mic",
+    "静音 Antigravity": "Mute Antigravity",
+    "取消静音 Antigravity": "Unmute Antigravity"
   },
   "regex_rules": [
+    {
+      "pattern": "^Unmute Jetski\\s*\\((.+?)\\)$",
+      "replacement": "取消静音 Jetski ($1)"
+    },
+    {
+      "pattern": "^Mute Jetski\\s*\\((.+?)\\)$",
+      "replacement": "静音 Jetski ($1)"
+    },
+    {
+      "pattern": "^Unmute Antigravity\\s*\\((.+?)\\)$",
+      "replacement": "取消静音 Antigravity ($1)"
+    },
+    {
+      "pattern": "^Mute Antigravity\\s*\\((.+?)\\)$",
+      "replacement": "静音 Antigravity ($1)"
+    },
+    {
+      "pattern": "^Unmute mic\\s*\\((.+?)\\)$",
+      "replacement": "取消麦克风静音 ($1)"
+    },
+    {
+      "pattern": "^Mute mic\\s*\\((.+?)\\)$",
+      "replacement": "静音麦克风 ($1)"
+    },
+    {
+      "pattern": "^Stopped voice chat\\s*[\\u00b7·]\\s*(.+)$",
+      "replacement": "已结束语音对话 · $1"
+    },
+    {
+      "pattern": "^Started voice chat\\s*[\\u00b7·]\\s*(.+)$",
+      "replacement": "已开启语音对话 · $1"
+    },
+    {
+      "pattern": "^Voice speed,\\s*(.+)$",
+      "replacement": "语速：$1"
+    },
+    {
+      "pattern": "^Voice speed,\\s*(\\d+(?:\\.\\d+)?x?)$",
+      "replacement": "语速：$1"
+    },
     {
       "pattern": "^Version\\s+(\\d+(?:\\.\\d+)*)$",
       "replacement": "版本 $1"
