@@ -267,15 +267,93 @@ def patchSwarmSidecar():
                     (
                         "label.textContent = 'Copied';",
                         "label.textContent = '已复制';"
+                    ),
+                    (
+                        "const label = stale ? 'Reconnecting' : 'Live';",
+                        "const label = stale ? '重新连接中' : '实时';"
                     )
                 ]
                 for src, rep in replacements_js:
                     a = a.replace(src, rep)
                 with open(app_js, "w", encoding="utf-8") as f:
                     f.write(a)
-                print(f"[✓] Swarm board sidecar localized: {sb_dir}")
+                print(f"[✓] Swarm board app.js localized: {sb_dir}")
             except Exception as e:
                 print(f"[!] Notice: Swarm board app.js patch skipped: {e}")
+
+        # 3. 汉化 hive.js (Overview 概览面板、团队成员状态、任务进度卡片)
+        hive_js = os.path.join(sb_dir, "hive.js")
+        if os.path.exists(hive_js):
+            try:
+                with open(hive_js, "r", encoding="utf-8") as f:
+                    h_js = f.read()
+                replacements_hive = [
+                    (
+                        "const COPY_UI = { team:'The team', lead:'Coordinator', blocked:'Blocked', running:'Running', planned:'Planned next', done:'Done',\n"
+                        "    more:'+{n} more', goal:'Goal', threads:'Threads', now:'Now', progress:'Progress', compare:'Compare with now', expand:'Open full timeline', none_blocked:'Nothing blocked', needs:'Needs you', waiting:'Waiting on @coordinator', stuck:'Stuck', none_waiting:'Nothing waiting', none_stuck:'Nothing stuck', none_needs:'Nothing needs you', none_running:'Nothing running', none_planned:'Nothing planned' };",
+                        "const COPY_UI = { team:'集群团队', lead:'协调员', blocked:'已阻塞', running:'运行中', planned:'待规划', done:'已完成',\n"
+                        "    more:'+{n} 更多', goal:'目标', threads:'讨论流', now:'当前进展', progress:'整体进度', compare:'与当前对比', expand:'展开完整时间线', none_blocked:'暂无阻塞任务', needs:'需要人工处理', waiting:'等待协调员响应', stuck:'卡滞', none_waiting:'暂无等待任务', none_stuck:'暂无卡滞任务', none_needs:'无需人工介入', none_running:'暂无运行任务', none_planned:'暂无规划任务' };"
+                    ),
+                    (
+                        "const LABEL = {needs:ui('needs'), stuck:ui('stuck'), running:'Moving', queued:'Not started', done:'Done'};",
+                        "const LABEL = {needs:ui('needs'), stuck:ui('stuck'), running:'推进中', queued:'未开始', done:'已完成'};"
+                    ),
+                    (
+                        '<span class="o2-progt"><b>${tot.done} of ${totalCount}</b> tasks done</span>',
+                        '<span class="o2-progt">已完成 <b>${tot.done} / ${totalCount}</b> 项任务</span>'
+                    ),
+                    (
+                        '<p class="o2-rmeta">${f.done} of ${total} tasks done</p>',
+                        '<p class="o2-rmeta">已完成 ${f.done} / ${total} 项任务</p>'
+                    ),
+                    (
+                        "${f.done} of ${f.total} tasks done",
+                        "已完成 ${f.done} / ${f.total} 项任务"
+                    ),
+                    (
+                        'if(w && w.rawState===\'review\') return `<span class="o2-tprog rev">In review</span>`;',
+                        'if(w && w.rawState===\'review\') return `<span class="o2-tprog rev">审查中</span>`;'
+                    ),
+                    (
+                        'if(revCount > 0) chips.push(`<span class="o2-pchip info"><i></i>${revCount} in review</span>`);',
+                        'if(revCount > 0) chips.push(`<span class="o2-pchip info"><i></i>${revCount} 个审查中</span>`);'
+                    ),
+                    (
+                        'if(openThreads) chips.push(`<span class="o2-pchip">${openThreads} thread${openThreads===1?\'\':\'s\'} open</span>`);',
+                        'if(openThreads) chips.push(`<span class="o2-pchip">${openThreads} 个主题进行中</span>`);'
+                    ),
+                    (
+                        'else if(tot.running - revCount > 0) chips.push(`<span class="o2-pchip info"><i></i>${tot.running - revCount} active</span>`);',
+                        'else if(tot.running - revCount > 0) chips.push(`<span class="o2-pchip info"><i></i>${tot.running - revCount} 个活跃</span>`);'
+                    ),
+                    (
+                        ': `<p class="o2-doneempty">No tasks completed yet.</p>`;',
+                        ': `<p class="o2-doneempty">暂无已完成的任务。</p>`;'
+                    ),
+                    (
+                        '<div class="o2-qhdr">Up next · ${queuedWs.length}</div>',
+                        '<div class="o2-qhdr">后续计划 · ${queuedWs.length}</div>'
+                    ),
+                    (
+                        'statTag = st===\'needs_you\' ? `<span class="o2-mstat warn">${ui(\'needs\')}</span>` : st===\'working\' ? `<span class="o2-mstat info">Coordinator · Working</span>` : `<span class="o2-mstat">Coordinator</span>`;',
+                        'statTag = st===\'needs_you\' ? `<span class="o2-mstat warn">${ui(\'needs\')}</span>` : st===\'working\' ? `<span class="o2-mstat info">协调员 · 工作中</span>` : `<span class="o2-mstat">协调员</span>`;'
+                    ),
+                    (
+                        'statTag = x.title ? `<span class="o2-mstat">${esc(x.title)}</span>` : `<span class="o2-mstat">Retired</span>`;',
+                        'statTag = x.title ? `<span class="o2-mstat">${esc(x.title)}</span>` : `<span class="o2-mstat">已离队</span>`;'
+                    ),
+                    (
+                        'statTag = `<span class="o2-mstat info">Working</span>`;',
+                        'statTag = `<span class="o2-mstat info">工作中</span>`;'
+                    )
+                ]
+                for src, rep in replacements_hive:
+                    h_js = h_js.replace(src, rep)
+                with open(hive_js, "w", encoding="utf-8") as f:
+                    f.write(h_js)
+                print(f"[✓] Swarm board hive.js localized: {sb_dir}")
+            except Exception as e:
+                print(f"[!] Notice: Swarm board hive.js patch skipped: {e}")
 
 def broadcast_cdp(script_dir):
     """尝试通过 Chrome DevTools Protocol 广播热更新至当前运行的所有页面"""
