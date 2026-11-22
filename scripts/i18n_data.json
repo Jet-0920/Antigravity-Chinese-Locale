@@ -3999,7 +3999,22 @@
     "Started voice chat": "已开启语音对话",
     "started voice chat": "已开启语音对话",
     "Stopped voice chat": "已结束语音对话",
-    "stopped voice chat": "已结束语音对话"
+    "stopped voice chat": "已结束语音对话",
+    "copy image": "复制图片",
+    "Save Image": "保存图片",
+    "save image": "保存图片",
+    "copy image address": "复制图片地址",
+    "Copy Video": "复制视频",
+    "copy video": "复制视频",
+    "Save Video": "保存视频",
+    "save video": "保存视频",
+    "copy message": "复制消息",
+    "Undo to Here": "撤销到此处",
+    "undo to here": "撤销到此处",
+    "image.png": "图片.png",
+    "image.jpg": "图片.jpg",
+    "image.jpeg": "图片.jpeg",
+    "image.webp": "图片.webp"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4271,9 +4286,41 @@
     "静音麦克风": "Mute mic",
     "取消麦克风静音": "Unmute mic",
     "静音 Antigravity": "Mute Antigravity",
-    "取消静音 Antigravity": "Unmute Antigravity"
+    "取消静音 Antigravity": "Unmute Antigravity",
+    "复制图片": "Copy Image",
+    "保存图片": "Save Image",
+    "复制消息": "Copy Message",
+    "撤销到此处": "Undo to Here"
   },
   "regex_rules": [
+    {
+      "pattern": "^(\\d+)\\s*y\\s+ago$",
+      "replacement": "$1 年前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*mo\\s+ago$",
+      "replacement": "$1 个月前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*w\\s+ago$",
+      "replacement": "$1 周前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*d\\s+ago$",
+      "replacement": "$1 天前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*s\\s+ago$",
+      "replacement": "$1 秒前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*h\\s+ago$",
+      "replacement": "$1 小时前"
+    },
+    {
+      "pattern": "^(\\d+)\\s*m\\s+ago$",
+      "replacement": "$1 分钟前"
+    },
     {
       "pattern": "^Unmute Jetski\\s*\\((.+?)\\)$",
       "replacement": "取消静音 Jetski ($1)"

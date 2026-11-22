@@ -279,20 +279,27 @@
             return lead + formatDuration(mResetGen[1]) + "后重置" + trail;
         }
 
-        // C2. 简写相对时间
-        if (trimmed === "now") {
+        // C2. 相对时间智能识别 (支持 19m ago, 2h ago, 5s ago, 19m, just now 等全量变体)
+        if (trimmed === "now" || trimmed === "just now") {
             return lead + "刚刚" + trail;
         }
-        var mCompactTime = trimmed.match(/^(\d+)\s*(s|m|h|d|w|mo|y)$/);
+        if (trimmed === "yesterday") {
+            return lead + "昨天" + trail;
+        }
+        var mCompactTime = trimmed.match(/^(\d+)\s*(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|mo|mon|mons|month|months|y|yr|yrs|year|years)(?:\s+ago)?$/i);
         if (mCompactTime) {
             var num = mCompactTime[1];
-            var unit = mCompactTime[2];
-            var unitMap = {
-                "s": "秒前", "m": "分钟前", "h": "小时前",
-                "d": "天前", "w": "周前", "mo": "个月前", "y": "年前"
-            };
-            if (unitMap[unit]) {
-                return lead + num + unitMap[unit] + trail;
+            var u = mCompactTime[2].toLowerCase();
+            var unitZh = "";
+            if (u === "s" || u.startsWith("sec")) unitZh = "秒前";
+            else if (u === "m" || u.startsWith("min")) unitZh = "分钟前";
+            else if (u === "h" || u.startsWith("hr") || u.startsWith("hour")) unitZh = "小时前";
+            else if (u === "d" || u.startsWith("day")) unitZh = "天前";
+            else if (u === "w" || u.startsWith("wk") || u.startsWith("week")) unitZh = "周前";
+            else if (u === "mo" || u.startsWith("mon") || u.startsWith("month")) unitZh = "个月前";
+            else if (u === "y" || u.startsWith("yr") || u.startsWith("year")) unitZh = "年前";
+            if (unitZh) {
+                return lead + num + " " + unitZh + trail;
             }
         }
 
