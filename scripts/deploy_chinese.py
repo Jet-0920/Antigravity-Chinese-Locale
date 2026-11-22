@@ -141,6 +141,28 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         if hud_state_js not in modified_files:
             modified_files.append(hud_state_js)
 
+    # 5. 汉化 dist/ipcHandlers.js (拦截原生系统上下文菜单 window:show-context-menu)
+    ipc_js = os.path.join(dist_dir, "ipcHandlers.js")
+    if os.path.exists(ipc_js):
+        with open(ipc_js, "r", encoding="utf-8") as f:
+            ipc_c = f.read()
+        target_needle = "activeContextMenu?.closePopup?.(win);"
+        inject_ipc = (
+            "activeContextMenu?.closePopup?.(win);\n"
+            "        try {\n"
+            "            const utils = require('./utils');\n"
+            "            if (utils && typeof utils.translateContextMenuItems === 'function') {\n"
+            "                utils.translateContextMenuItems(items);\n"
+            "            }\n"
+            "        } catch(e) {}"
+        )
+        if target_needle in ipc_c and "utils.translateContextMenuItems" not in ipc_c:
+            ipc_c = ipc_c.replace(target_needle, inject_ipc, 1)
+            with open(ipc_js, "w", encoding="utf-8") as f:
+                f.write(ipc_c)
+            if ipc_js not in modified_files:
+                modified_files.append(ipc_js)
+
 
 def patchSwarmSidecar():
     """汉化内置的 Swarm 集群协作看板 (Swarm Board UI)"""
@@ -533,6 +555,62 @@ def main():
             "    }\n"
             "};\n"
             "setupLiveWatch();\n"
+            "const translateContextMenuItems = (items) => {\n"
+            "    try {\n"
+            "        if (!Array.isArray(items)) return;\n"
+            "        const resDir = getPhysicalResourcesPath();\n"
+            "        const livePath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
+            "        const asarPath = _path.join(__dirname, 'i18n_data.json');\n"
+            "        let dataStr = '';\n"
+            "        if (livePath && _fs.existsSync(livePath)) {\n"
+            "            dataStr = _fs.readFileSync(livePath, 'utf-8');\n"
+            "        } else if (_fs.existsSync(asarPath)) {\n"
+            "            dataStr = _fs.readFileSync(asarPath, 'utf-8');\n"
+            "        }\n"
+            "        if (!dataStr) return;\n"
+            "        const dict = JSON.parse(dataStr);\n"
+            "        const exactMap = dict.exact || {};\n"
+            "        const regexRules = (dict.regex_rules || []).map(r => ({\n"
+            "            re: new RegExp(r.pattern),\n"
+            "            rep: r.replacement\n"
+            "        }));\n"
+            "        const translateOne = (str) => {\n"
+            "            if (typeof str !== 'string' || !str.trim()) return str;\n"
+            "            const trimmed = str.trim();\n"
+            "            if (exactMap[trimmed]) return str.replace(trimmed, exactMap[trimmed]);\n"
+            "            if (exactMap[trimmed.toLowerCase()]) return str.replace(trimmed, exactMap[trimmed.toLowerCase()]);\n"
+            "            const mTime = trimmed.match(/^(\\d+)\\s*(s|m|h|d|w|mo|y)\\s*ago$/i);\n"
+            "            if (mTime) {\n"
+            "                const num = mTime[1];\n"
+            "                const unit = mTime[2].toLowerCase();\n"
+            "                const uMap = { s: '秒前', m: '分钟前', h: '小时前', d: '天前', w: '周前', mo: '个月前', y: '年前' };\n"
+            "                if (uMap[unit]) return str.replace(trimmed, `${num} ${uMap[unit]}`);\n"
+            "            }\n"
+            "            for (let i = 0; i < regexRules.length; i++) {\n"
+            "                if (regexRules[i].re.test(trimmed)) {\n"
+            "                    return str.replace(trimmed, trimmed.replace(regexRules[i].re, regexRules[i].rep));\n"
+            "                }\n"
+            "            }\n"
+            "            return str;\n"
+            "        };\n"
+            "        const walk = (arr) => {\n"
+            "            for (let i = 0; i < arr.length; i++) {\n"
+            "                const it = arr[i];\n"
+            "                if (!it) continue;\n"
+            "                if (typeof it.label === 'string') {\n"
+            "                    it.label = translateOne(it.label);\n"
+            "                }\n"
+            "                if (Array.isArray(it.submenu)) {\n"
+            "                    walk(it.submenu);\n"
+            "                }\n"
+            "            }\n"
+            "        };\n"
+            "        walk(items);\n"
+            "    } catch(e) {\n"
+            "        console.error('[Antigravity i18n] Main process context menu translation error:', e);\n"
+            "    }\n"
+            "};\n"
+            "exports.translateContextMenuItems = translateContextMenuItems;\n"
             "exports.injectAntigravityI18n = injectAntigravityI18n;\n"
         )
 
@@ -568,16 +646,16 @@ def main():
             )
             u_content = u_content.replace(needle_old, old_hook, 1)
 
-            show_needle = "wins[0].focus();"
-            if show_needle in u_content:
-                u_content = u_content.replace(
-                    show_needle,
-                    show_needle + "\n        if (exports.injectAntigravityI18n) { (0, exports.injectAntigravityI18n)(wins[0]); }",
-                    1
-                )
+        show_needle = "wins[0].focus();"
+        if show_needle in u_content and "exports.injectAntigravityI18n" not in u_content:
+            u_content = u_content.replace(
+                show_needle,
+                show_needle + "\n        if (exports.injectAntigravityI18n) { (0, exports.injectAntigravityI18n)(wins[0]); }",
+                1
+            )
 
-            with open(utils_js, "w", encoding="utf-8") as f:
-                f.write(u_content)
+        with open(utils_js, "w", encoding="utf-8") as f:
+            f.write(u_content)
         modified_files.append(utils_js)
 
         # B. 注入 main.js (全局 web-contents-created 守卫)

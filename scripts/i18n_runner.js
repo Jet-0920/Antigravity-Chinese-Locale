@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 2.6;
+    var RUNNER_VERSION = 2.8;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -322,6 +322,44 @@
             }
         }
 
+        // C3. 语音对话状态与提示词正则拦截 (Started voice chat · 15:42 等)
+        var mVoiceChat = trimmed.match(/^(Started|Stopped|Ended)\s+voice\s+chat(?:\s*([·\.\u00b7\-–—])\s*(.+))?$/i);
+        if (mVoiceChat) {
+            var act = mVoiceChat[1].toLowerCase();
+            var actZh = (act === "started") ? "已开启语音对话" : "已结束语音对话";
+            var sep = mVoiceChat[2] || "·";
+            var timePart = mVoiceChat[3] ? (" " + sep + " " + mVoiceChat[3]) : "";
+            return lead + actZh + timePart + trail;
+        }
+
+        // C4. 语速浮层与气泡正则拦截 (Voice speed, 1x / Voice speed 1.5x)
+        var mVoiceSpeedX = trimmed.match(/^Voice\s+speed,?\s*([\d\.]+)x$/i);
+        if (mVoiceSpeedX) {
+            return lead + "语速：" + mVoiceSpeedX[1] + "x" + trail;
+        }
+
+        // C5. 麦克风与快捷键气泡正则拦截 (Mute mic (Alt+M) / Unmute mic (Alt+M))
+        var mMuteWithKey = trimmed.match(/^(Mute|Unmute)\s+mic(?:\s*(\([^)]+\)))?$/i);
+        if (mMuteWithKey) {
+            var isMute = mMuteWithKey[1].toLowerCase() === "mute";
+            var mZh = isMute ? "静音麦克风" : "取消麦克风静音";
+            var keyPart = mMuteWithKey[2] ? (" " + mMuteWithKey[2]) : "";
+            return lead + mZh + keyPart + trail;
+        }
+
+        // C6. 带图标符号的前置操作按钮 (如 ✕ End, × End 等)
+        var mIconAction = trimmed.match(/^([✕×x\u2715\u00d7]\s*)(End|Stop|Cancel|Close)$/i);
+        if (mIconAction) {
+            var actionLower = mIconAction[2].toLowerCase();
+            var actionZh = actionLower === "end" ? "结束" : (actionLower === "stop" ? "停止" : (actionLower === "cancel" ? "取消" : "关闭"));
+            return lead + mIconAction[1] + actionZh + trail;
+        }
+
+        // C7. 语音面板组合词自愈 (如 音色 speed -> 音色 语速)
+        if (/^音色\s+speed$/i.test(trimmed)) {
+            return lead + "音色 语速" + trail;
+        }
+
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
@@ -362,6 +400,45 @@
 
         return null;
     }
+
+    // 2.8 原生系统上下文菜单深度拦截 Hook (Native Context Menu Hook)
+    function translateNativeItems(items) {
+        if (!Array.isArray(items)) return;
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i];
+            if (!it) continue;
+            if (typeof it.label === "string" && it.label) {
+                var translated = getTranslatedText(it.label, null);
+                if (translated) {
+                    it.label = translated;
+                }
+            }
+            if (Array.isArray(it.submenu)) {
+                translateNativeItems(it.submenu);
+            }
+        }
+    }
+
+    function hookElectronNativeContextMenu() {
+        try {
+            if (window.electronNative && typeof window.electronNative.showContextMenu === "function" && !window.electronNative.__i18n_hooked) {
+                window.electronNative.__i18n_hooked = true;
+                var origShow = window.electronNative.showContextMenu;
+                window.electronNative.showContextMenu = function (items) {
+                    try {
+                        if (Array.isArray(items)) {
+                            translateNativeItems(items);
+                        }
+                    } catch (e) {
+                        console.error("[Antigravity i18n] Error translating context menu items:", e);
+                    }
+                    return origShow.apply(this, arguments);
+                };
+            }
+        } catch (e) {}
+    }
+    hookElectronNativeContextMenu();
+    setInterval(hookElectronNativeContextMenu, 500);
 
     // 3. Node Translation Engine
     function translateTextNode(textNode) {
@@ -435,16 +512,14 @@
     // 3.5 专属 Tooltip 毫秒级防漏自愈引擎（独立私有锁，绝不与主页面全局锁冲突）
     function fastTranslateTooltip(el) {
         if (!el) return;
-        var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
         var node;
         while ((node = walker.nextNode())) {
             var val = node.nodeValue;
             if (val && val.trim()) {
-                var trimmed = val.trim();
-                var translated = exactMap[trimmed] || exactMap[trimmed.toLowerCase()];
-                if (translated && translated !== val) {
-                    node.nodeValue = val.replace(trimmed, translated);
+                var translated = getTranslatedText(val, node);
+                if (translated !== null && translated !== val) {
+                    node.nodeValue = translated;
                 }
             }
         }
@@ -475,7 +550,7 @@
     }
 
     function syncCorrectTooltips() {
-        var tips = document.querySelectorAll('[role="tooltip"], .compact-tooltip');
+        var tips = document.querySelectorAll('[role="tooltip"], .compact-tooltip, [class*="tooltip"], [data-tooltip], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div');
         for (var i = 0; i < tips.length; i++) {
             hookTooltipContainer(tips[i]);
             fastTranslateTooltip(tips[i]);
@@ -622,6 +697,8 @@
     // 指针滑动与悬停双重捕获，实现 0ms 即时校准
     document.addEventListener("pointermove", syncCorrectOverlays, { passive: true, capture: true });
     document.addEventListener("mouseover", syncCorrectOverlays, { passive: true, capture: true });
+    document.addEventListener("pointerenter", syncCorrectOverlays, { passive: true, capture: true });
+    document.addEventListener("mouseenter", syncCorrectOverlays, { passive: true, capture: true });
 
     // 5. High-Performance MutationObserver (childList only, strictly prevents characterData recursion)
     var isTranslating = false;
@@ -759,5 +836,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v2.6 successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v2.8 successfully initialized and active.");
 })();

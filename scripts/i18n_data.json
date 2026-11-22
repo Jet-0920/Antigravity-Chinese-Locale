@@ -4015,7 +4015,7 @@
     "image.jpg": "图片.jpg",
     "image.jpeg": "图片.jpeg",
     "image.webp": "图片.webp",
-    "音色 speed": "语速",
+    "音色 speed": "音色 语速",
     "Voice speed, 1x": "语速：1x",
     "Voice Speed, 1x": "语速：1x",
     "Voice speed, 1.5x": "语速：1.5x",
@@ -4036,7 +4036,24 @@
     "1h ago": "1 小时前",
     "3h ago": "3 小时前",
     "4h ago": "4 小时前",
-    "5h ago": "5 小时前"
+    "5h ago": "5 小时前",
+    "✕ End": "✕ 结束",
+    "× End": "× 结束",
+    "x End": "x 结束",
+    "✕End": "✕结束",
+    "Voice speed, 0.5x": "语速：0.5x",
+    "Voice speed, 1.25x": "语速：1.25x",
+    "Voice speed, 1.75x": "语速：1.75x",
+    "Voice Speed, 0.5x": "语速：0.5x",
+    "Voice Speed, 1.25x": "语速：1.25x",
+    "Voice Speed, 1.75x": "语速：1.75x",
+    "音色  speed": "音色 语速",
+    "Voice / Speed": "音色 / 语速",
+    "Voice/Speed": "音色/语速",
+    "Voice & Speed": "音色与语速",
+    "Mute Mic": "静音麦克风",
+    "Unmute Mic": "取消麦克风静音",
+    "Ended voice chat": "已结束语音对话"
   },
   "reverse_map": {
     "始终询问": "Always Ask",
@@ -4303,16 +4320,35 @@
     "区分大小写": "Match Case",
     "全字匹配": "Match Whole Word",
     "使用正则表达式": "Use Regular Expression",
-    "结束": "End",
+    "结束": "end",
     "语速": "Voice speed",
-    "静音麦克风": "Mute mic",
-    "取消麦克风静音": "Unmute mic",
+    "静音麦克风": "Mute Mic",
+    "取消麦克风静音": "Unmute Mic",
     "静音 Antigravity": "Mute Antigravity",
     "取消静音 Antigravity": "Unmute Antigravity",
     "复制图片": "Copy Image",
     "保存图片": "Save Image",
     "复制消息": "Copy Message",
-    "撤销到此处": "Undo to Here"
+    "撤销到此处": "Undo to Here",
+    "✕ 结束": "✕ End",
+    "× 结束": "× End",
+    "x 结束": "x End",
+    "✕结束": "✕End",
+    "语速：0.5x": "Voice Speed, 0.5x",
+    "语速：0.75x": "Voice Speed, 0.75x",
+    "语速：1x": "Voice Speed, 1x",
+    "语速：1.25x": "Voice Speed, 1.25x",
+    "语速：1.5x": "Voice Speed, 1.5x",
+    "语速：1.75x": "Voice Speed, 1.75x",
+    "语速：2x": "Voice Speed, 2x",
+    "音色 语速": "音色  speed",
+    "音色 / 语速": "Voice / Speed",
+    "音色/语速": "Voice/Speed",
+    "音色与语速": "Voice & Speed",
+    "静音麦克风 (Alt+M)": "Mute mic (Alt+M)",
+    "取消麦克风静音 (Alt+M)": "Unmute mic (Alt+M)",
+    "已开启语音对话": "Started voice chat",
+    "已结束语音对话": "Ended voice chat"
   },
   "regex_rules": [
     {
@@ -5730,6 +5766,22 @@
     {
       "pattern": "^Knowledge\\ base\\ search\\ results\\ for:\\ (.+?)$",
       "replacement": "知识库搜索结果：$1"
+    },
+    {
+      "pattern": "^(Started|Stopped|Ended)\\s+voice\\s+chat(?:\\s*([·\\.\\u00b7\\-–—])\\s*(.+))?$",
+      "replacement": "已开启语音对话 $2 $3"
+    },
+    {
+      "pattern": "^Voice\\s+speed,?\\s*([\\d\\.]+)x$",
+      "replacement": "语速：$1x"
+    },
+    {
+      "pattern": "^(Mute|Unmute)\\s+mic(?:\\s*(\\([^)]+\\)))?$",
+      "replacement": "静音麦克风 $2"
+    },
+    {
+      "pattern": "^([✕×x\\u2715\\u00d7]\\s*)End$",
+      "replacement": "$1结束"
     }
   ],
   "exemptions": []
