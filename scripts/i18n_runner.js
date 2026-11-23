@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 2.8;
+    var RUNNER_VERSION = 2.9;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -358,6 +358,29 @@
         // C7. 语音面板组合词自愈 (如 音色 speed -> 音色 语速)
         if (/^音色\s+speed$/i.test(trimmed)) {
             return lead + "音色 语速" + trail;
+        }
+
+        // C8. 编辑状态括号标注正则 ( (all agent edits) 等)
+        var mEdits = trimmed.match(/^(.+?)\s*\((all\s+agent\s+edits|all\s+edits|agent\s+edits|user\s+edits)\)$/i);
+        if (mEdits) {
+            var prefix = mEdits[1];
+            var editType = mEdits[2].toLowerCase();
+            var editZh = editType.indexOf("user") !== -1 ? "(用户编辑)" : "(所有智能体编辑)";
+            var tPrefix = getTranslatedText(prefix, contextNode) || prefix;
+            return lead + tPrefix + " " + editZh + trail;
+        }
+
+        // C9. 快捷键浮动操作按钮正则 (Comment C / Quote Ctrl+L)
+        var mActKey = trimmed.match(/^(Comment|Quote|Copy|Edit)\s+([A-Za-z0-9\+\-]+)$/i);
+        if (mActKey) {
+            var act = mActKey[1].toLowerCase();
+            var actZh = act === "comment" ? "评论" : (act === "quote" ? "引用" : (act === "copy" ? "复制" : "编辑"));
+            return lead + actZh + " " + mActKey[2] + trail;
+        }
+
+        // C10. 半汉化自愈 (如 "下载 File" -> "下载文件")
+        if (/^下载\s+file$/i.test(trimmed)) {
+            return lead + "下载文件" + trail;
         }
 
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
@@ -836,5 +859,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v2.8 successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v2.9 successfully initialized and active.");
 })();
