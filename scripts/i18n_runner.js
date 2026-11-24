@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 3.2;
+    var RUNNER_VERSION = 3.3;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -198,7 +198,8 @@
         marketplace: "插件市场", publisher: "发布者", partner: "伙伴", official: "官方",
         overview: "概览", features: "特性", changelog: "日志", license: "许可",
         automatic: "自动", updates: "更新", browse: "浏览", browsing: "浏览",
-        notification: "通知", notifications: "通知", sound: "提示音", sounds: "提示音"
+        notification: "通知", notifications: "通知", sound: "提示音", sounds: "提示音",
+        width: "宽度", height: "高度", effort: "深度"
     };
 
     function autoTranslateTitle(str, node) {
@@ -404,6 +405,9 @@
         }
         if (/^Browsing\s+历史$/i.test(trimmed)) {
             return lead + "浏览历史记录" + trail;
+        }
+        if (/^会话\s+width$/i.test(trimmed)) {
+            return lead + "会话宽度" + trail;
         }
 
         // C11. 订阅与方案动态前缀正则 (如 Your plan: Google AI 专业版 -> 当前方案：Google AI 专业版)
@@ -914,5 +918,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v3.2 (Zero-Lag Ultra Performance) successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v3.3 (Zero-Lag Ultra Performance) successfully initialized and active.");
 })();
