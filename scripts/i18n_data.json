@@ -566,7 +566,7 @@
     "Ask before sensitive operations.": "敏感操作前提示确认。",
     "Auto (Preview)": "自动 (预览)",
     "Automatically decide if commands run.": "自动决定是否放行命令。",
-    "Turbo": "极速通行",
+    "Turbo": "完全放行",
     "Run all commands without restrictions.": "无限制运行所有命令。",
     "Usage": "用量",
     "Weekly limit": "每周额度",
@@ -3233,7 +3233,7 @@
     "Machine": "整机",
     "machine": "整机",
     "turbo mode": "极速模式",
-    "turbo": "极速通行",
+    "turbo": "完全放行",
     "inherit global": "继承全局设置",
     "custom": "自定义",
     "Requires manual review for all terminal commands and file accesses outside of the working folders.": "所有终端命令以及工作目录外的文件读写均需手动审查批准。",
@@ -4391,7 +4391,18 @@
     "Thinking mode": "思考模式",
     "thinking mode": "思考模式",
     "Thinking intensity": "思考强度",
-    "thinking intensity": "思考强度"
+    "thinking intensity": "思考强度",
+    "极速通行": "完全放行",
+    "Model cannot be changed while the agent is running": "智能体运行过程中无法更改模型",
+    "model cannot be changed while the agent is running": "智能体运行过程中无法更改模型",
+    "Model cannot be changed while the agent is running.": "智能体运行过程中无法更改模型",
+    "Model cannot be changed while agent is running": "智能体运行过程中无法更改模型",
+    "model cannot be changed while agent is running": "智能体运行过程中无法更改模型",
+    "Permissions cannot be changed while the agent is running": "智能体运行过程中无法更改权限设置",
+    "permissions cannot be changed while the agent is running": "智能体运行过程中无法更改权限设置",
+    "Permissions cannot be changed while the agent is running.": "智能体运行过程中无法更改权限设置",
+    "Permissions cannot be changed while agent is running": "智能体运行过程中无法更改权限设置",
+    "permissions cannot be changed while agent is running": "智能体运行过程中无法更改权限设置"
   },
   "reverse_map": {
     "始终询问": "always ask",
@@ -4840,7 +4851,10 @@
     "高度": "Height",
     "思考预算": "thinking budget",
     "思考模式": "thinking mode",
-    "思考强度": "thinking intensity"
+    "思考强度": "thinking intensity",
+    "完全放行": "Turbo",
+    "智能体运行过程中无法更改模型": "model cannot be changed while agent is running",
+    "智能体运行过程中无法更改权限设置": "permissions cannot be changed while agent is running"
   },
   "regex_rules": [
     {

@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 3.3;
+    var RUNNER_VERSION = 3.4;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -416,6 +416,16 @@
             var pName = mPlan[1];
             var tPName = getTranslatedText(pName, contextNode) || pName;
             return lead + "当前方案：" + tPName + trail;
+        }
+
+        // C12. 运行状态禁用提示正则 (如 Model/Permissions cannot be changed while the agent is running)
+        var mCannotChange = trimmed.match(/^(.+?)\s+cannot\s+be\s+changed\s+while\s+(?:the\s+)?agent\s+is\s+running\.?$/i);
+        if (mCannotChange) {
+            var subject = mCannotChange[1];
+            var tSubject = getTranslatedText(subject, contextNode) || subject;
+            if (/^Model$/i.test(subject)) tSubject = "模型";
+            else if (/^Permissions?$/i.test(subject)) tSubject = "权限设置";
+            return lead + "智能体运行过程中无法更改" + tSubject + trail;
         }
 
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
@@ -918,5 +928,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v3.3 (Zero-Lag Ultra Performance) successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v3.4 (Zero-Lag Ultra Performance) successfully initialized and active.");
 })();
