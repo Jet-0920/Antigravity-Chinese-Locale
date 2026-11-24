@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 3.0;
+    var RUNNER_VERSION = 3.1;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -73,8 +73,14 @@
         while (curr && curr !== document.body && curr !== document.documentElement) {
             if (curr.nodeType === 1) {
                 var tag = curr.tagName;
-                // 若当前节点或其父级是按钮或明确的 UI 控制控件（如代码块右上角的复制按钮），绝不排除
-                if (tag === "BUTTON" || (curr.getAttribute && curr.getAttribute("role") === "button")) {
+                // 若当前节点或其父级是按钮、快捷键标签或明确的 UI 控制控件，绝不排除
+                if (tag === "BUTTON" || tag === "KBD" || (curr.getAttribute && (
+                    curr.getAttribute("role") === "button" ||
+                    curr.getAttribute("role") === "menuitem" ||
+                    curr.getAttribute("role") === "tooltip" ||
+                    curr.getAttribute("role") === "menu" ||
+                    curr.getAttribute("role") === "tab"
+                ))) {
                     return false;
                 }
                 var cls = curr.className;
@@ -82,7 +88,15 @@
                     cls.indexOf("copy") !== -1 ||
                     cls.indexOf("overlay") !== -1 ||
                     cls.indexOf("popup") !== -1 ||
-                    cls.indexOf("tooltip") !== -1
+                    cls.indexOf("tooltip") !== -1 ||
+                    cls.indexOf("badge") !== -1 ||
+                    cls.indexOf("action") !== -1 ||
+                    cls.indexOf("comment") !== -1 ||
+                    cls.indexOf("quote") !== -1 ||
+                    cls.indexOf("menu") !== -1 ||
+                    cls.indexOf("viewing-diff") !== -1 ||
+                    cls.indexOf("zone-widget") !== -1 ||
+                    cls.indexOf("monaco-hover") !== -1
                 )) {
                     return false;
                 }
@@ -370,14 +384,6 @@
             return lead + tPrefix + " " + editZh + trail;
         }
 
-        // C9. 快捷键浮动操作按钮正则 (Comment C / Quote Ctrl+L)
-        var mActKey = trimmed.match(/^(Comment|Quote|Copy|Edit)\s+([A-Za-z0-9\+\-]+)$/i);
-        if (mActKey) {
-            var act = mActKey[1].toLowerCase();
-            var actZh = act === "comment" ? "评论" : (act === "quote" ? "引用" : (act === "copy" ? "复制" : "编辑"));
-            return lead + actZh + " " + mActKey[2] + trail;
-        }
-
         // C10. 半汉化自愈 (如 "下载 File" -> "下载文件")
         if (/^下载\s+file$/i.test(trimmed)) {
             return lead + "下载文件" + trail;
@@ -386,7 +392,7 @@
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
-        // D. 精确查表
+        // D. 精确查表 (绝对最高优先级，避免复合词被后续正则截胡)
         if (exactMap[trimmed] !== undefined) {
             return lead + exactMap[trimmed] + trail;
         }
@@ -405,6 +411,14 @@
         var lowerCollapsed = collapsed.toLowerCase();
         if (exactMap[lowerCollapsed] !== undefined) {
             return lead + exactMap[lowerCollapsed] + trail;
+        }
+
+        // D4. 快捷键浮动操作按钮正则 (仅匹配单键或组合键如 Comment C / Quote Ctrl+L，绝不误伤普通词组)
+        var mActKey = trimmed.match(/^(Comment|Quote|Copy|Edit)\s+([A-Z0-9]|Ctrl\+[A-Za-z0-9]|Cmd\+[A-Za-z0-9]|Alt\+[A-Za-z0-9]|Shift\+[A-Za-z0-9])$/i);
+        if (mActKey) {
+            var act = mActKey[1].toLowerCase();
+            var actZh = act === "comment" ? "评论" : (act === "quote" ? "引用" : (act === "copy" ? "复制" : "编辑"));
+            return lead + actZh + " " + mActKey[2] + trail;
         }
 
         // E. 正则规则匹配
@@ -457,11 +471,17 @@
                     }
                     return origShow.apply(this, arguments);
                 };
+                return true;
             }
         } catch (e) {}
+        return false;
     }
     hookElectronNativeContextMenu();
-    // Polling removed: hooked once at startup
+    // 渲染层多阶段重试挂载 (0ms, 60ms, 200ms, 600ms, 1500ms) 确保在 contextBridge 或异步准备完成时 100% 挂载
+    var nativeHookDelays = [60, 200, 600, 1500];
+    for (var nhd = 0; nhd < nativeHookDelays.length; nhd++) {
+        setTimeout(hookElectronNativeContextMenu, nativeHookDelays[nhd]);
+    }
 
     // 3. Node Translation Engine
     function translateTextNode(textNode) {
@@ -609,9 +629,9 @@
     }
 
     function syncCorrectOverlays() {
-        // 全量侦测右键上下文菜单、Portal 浮层、弹出菜单项、弹窗
+        // 全量侦测右键上下文菜单、Portal 浮层、弹出菜单项、弹窗、Diff 差异徽章与选区工具栏
         var overlays = document.querySelectorAll(
-            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div'
+            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div, .monaco-hover, .zone-widget, [class*="viewing-diff"], [class*="overlay"], [class*="popup"]'
         );
         for (var i = 0; i < overlays.length; i++) {
             hookOverlayContainer(overlays[i]);
@@ -715,8 +735,23 @@
         }
     }, true);
 
-    // 指针滑动与悬停双重捕获，实现 0ms 即时校准
-// Mouse move/hover listeners removed to ensure 144fps smooth UI and zero lag
+    // 目标感知型悬停捕获：仅在指针悬停于按钮、菜单项或浮层元素时 16ms 极轻防抖校准，彻底兼顾 144fps 与即时汉化
+    var hoverDebounceTimer = null;
+    document.addEventListener("mouseover", function (e) {
+        var t = e.target;
+        if (!t) return;
+        var tag = t.tagName;
+        var role = t.getAttribute ? t.getAttribute("role") : null;
+        if (tag === "BUTTON" || role === "tooltip" || role === "button" || role === "menuitem" || (t.className && typeof t.className === "string" && (
+            t.className.indexOf("tooltip") !== -1 ||
+            t.className.indexOf("hover") !== -1 ||
+            t.className.indexOf("copy") !== -1 ||
+            t.className.indexOf("badge") !== -1
+        ))) {
+            if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
+            hoverDebounceTimer = setTimeout(syncCorrectOverlays, 16);
+        }
+    }, { passive: true, capture: true });
 
     // 5. High-Performance MutationObserver (childList only, strictly prevents characterData recursion)
     var isTranslating = false;
@@ -854,5 +889,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v3.0 (Zero-Lag Ultra Performance) successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v3.1 (Zero-Lag Ultra Performance) successfully initialized and active.");
 })();
