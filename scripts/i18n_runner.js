@@ -21,7 +21,7 @@
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 2.9;
+    var RUNNER_VERSION = 3.0;
     if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
         if (typeof window.__antigravity_reload_i18n === 'function') {
             window.__antigravity_reload_i18n(data);
@@ -461,7 +461,7 @@
         } catch (e) {}
     }
     hookElectronNativeContextMenu();
-    setInterval(hookElectronNativeContextMenu, 500);
+    // Polling removed: hooked once at startup
 
     // 3. Node Translation Engine
     function translateTextNode(textNode) {
@@ -564,7 +564,6 @@
         });
 
         obs.observe(el, {
-            characterData: true,
             childList: true,
             subtree: true
         });
@@ -602,7 +601,6 @@
         });
 
         obs.observe(el, {
-            characterData: true,
             childList: true,
             subtree: true
         });
@@ -613,7 +611,7 @@
     function syncCorrectOverlays() {
         // 全量侦测右键上下文菜单、Portal 浮层、弹出菜单项、弹窗
         var overlays = document.querySelectorAll(
-            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [role="dialog"], [data-radix-popper-content-wrapper], [data-floating-ui-portal]'
+            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div'
         );
         for (var i = 0; i < overlays.length; i++) {
             hookOverlayContainer(overlays[i]);
@@ -718,10 +716,7 @@
     }, true);
 
     // 指针滑动与悬停双重捕获，实现 0ms 即时校准
-    document.addEventListener("pointermove", syncCorrectOverlays, { passive: true, capture: true });
-    document.addEventListener("mouseover", syncCorrectOverlays, { passive: true, capture: true });
-    document.addEventListener("pointerenter", syncCorrectOverlays, { passive: true, capture: true });
-    document.addEventListener("mouseenter", syncCorrectOverlays, { passive: true, capture: true });
+// Mouse move/hover listeners removed to ensure 144fps smooth UI and zero lag
 
     // 5. High-Performance MutationObserver (childList only, strictly prevents characterData recursion)
     var isTranslating = false;
@@ -859,5 +854,5 @@
     window.__antigravity_translateWholePage = translateWholePage;
     window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v2.9 successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v3.0 (Zero-Lag Ultra Performance) successfully initialized and active.");
 })();
