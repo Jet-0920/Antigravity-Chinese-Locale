@@ -42,10 +42,34 @@
     window.__ANTIGRAVITY_ORIG_ATTR_STORE__ = window.__ANTIGRAVITY_ORIG_ATTR_STORE__ || new WeakMap();
 
     // 2. High-Performance Base UI / Radix Controlled Component Reverse Map Hook
+    function resolveReverseCandidates(mapObj, key, rev) {
+        var origHasFn = Map.prototype.__agOrigHas || Map.prototype.has;
+        var cand = rev[key];
+        if (cand) {
+            if (Array.isArray(cand)) {
+                for (var i = 0; i < cand.length; i++) {
+                    if (origHasFn.call(mapObj, cand[i])) return cand[i];
+                }
+            } else if (typeof cand === "string") {
+                if (origHasFn.call(mapObj, cand)) return cand;
+            }
+        }
+        // 支持 12 小时制时段反向还原 (凌晨/上午/中午/下午 H:MM <-> H:MM AM/PM)
+        var mTimeRev = key.match(/^(凌晨|上午|中午|下午)\s*(\d{1,2}:\d{2})$/);
+        if (mTimeRev) {
+            var period = mTimeRev[1];
+            var hm = mTimeRev[2];
+            var enTime = hm + ((period === "凌晨" || period === "上午") ? " AM" : " PM");
+            if (origHasFn.call(mapObj, enTime)) return enTime;
+        }
+        return undefined;
+    }
+
     if (!window.__antigravity_map_hooked) {
         window.__antigravity_map_hooked = true;
         var origHas = Map.prototype.has;
         var origGet = Map.prototype.get;
+        Map.prototype.__agOrigHas = origHas;
         var zhCharRegex = /[\u4e00-\u9fa5]/;
 
         Map.prototype.has = function (key) {
@@ -54,17 +78,7 @@
             if (typeof key !== "string" || !zhCharRegex.test(key)) return false;
 
             var rev = window.__ANTIGRAVITY_REVERSE_MAP__ || REVERSE_MAP;
-            var cand = rev[key];
-            if (cand) {
-                if (Array.isArray(cand)) {
-                    for (var i = 0; i < cand.length; i++) {
-                        if (origHas.call(this, cand[i])) return true;
-                    }
-                } else if (typeof cand === "string") {
-                    if (origHas.call(this, cand)) return true;
-                }
-            }
-            return false;
+            return resolveReverseCandidates(this, key, rev) !== undefined;
         };
 
         Map.prototype.get = function (key) {
@@ -78,21 +92,8 @@
             }
 
             var rev = window.__ANTIGRAVITY_REVERSE_MAP__ || REVERSE_MAP;
-            var cand = rev[key];
-            if (cand) {
-                if (Array.isArray(cand)) {
-                    for (var i = 0; i < cand.length; i++) {
-                        if (origHas.call(this, cand[i])) {
-                            return origGet.call(this, cand[i]);
-                        }
-                    }
-                } else if (typeof cand === "string") {
-                    if (origHas.call(this, cand)) {
-                        return origGet.call(this, cand);
-                    }
-                }
-            }
-            return undefined;
+            var matchedKey = resolveReverseCandidates(this, key, rev);
+            return matchedKey !== undefined ? origGet.call(this, matchedKey) : undefined;
         };
     }
 
@@ -516,6 +517,33 @@
             return lead + "打开侧边对话：" + mOpenSidePrefix[1] + trail;
         }
 
+        // C15. 12 小时制时段格式化 (9:00 AM -> 上午 9:00, 12:00 PM -> 中午 12:00, 2:00 PM -> 下午 2:00)
+        var mAmPm = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (mAmPm) {
+            var hourNum = parseInt(mAmPm[1], 10);
+            var mins = mAmPm[2];
+            var ampm = mAmPm[3].toUpperCase();
+            if (hourNum >= 1 && hourNum <= 12) {
+                var zhPeriod = ampm === "AM"
+                    ? (hourNum === 12 ? "凌晨" : "上午")
+                    : (hourNum === 12 ? "中午" : "下午");
+                return lead + zhPeriod + " " + hourNum + ":" + mins + trail;
+            }
+        }
+
+        // C16. 定时计划时间连接词上下文精确匹配 (Every day [at] 9:00 AM / Every week [on] Monday)
+        if ((trimmed === "at" || trimmed === "on") && contextNode && !isInsideProseFlow(contextNode)) {
+            var schedParent = contextNode.nodeType === 3 ? contextNode.parentNode : contextNode;
+            for (var sd = 0; sd < 2 && schedParent && schedParent !== document.body && schedParent !== document.documentElement; sd++) {
+                if (typeof schedParent.textContent === "string" && schedParent.textContent.length <= 160) {
+                    if (/(?:GMT|UTC|\d{1,2}:\d{2}|AM|PM|上午|下午|中午|凌晨|每天|每周|每月|每小时|工作日|Every)/i.test(schedParent.textContent)) {
+                        return lead + (trimmed === "at" ? "于" : "在") + trail;
+                    }
+                }
+                schedParent = schedParent.parentNode;
+            }
+        }
+
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
@@ -633,7 +661,12 @@
         if (!el || el.nodeType !== 1 || typeof el.getAttribute !== "function") return;
         var tag = el.tagName;
         if (tag === "SCRIPT" || tag === "STYLE") return;
-        if (isInsideExcluded(el)) return;
+        // 允许翻译 <input>/<textarea> 的 placeholder / aria-label / title 等属性，同时仍阻断代码编辑器/终端内的输入控件
+        if (tag === "INPUT" || tag === "TEXTAREA") {
+            if (el.parentNode && isInsideExcluded(el.parentNode)) return;
+        } else if (isInsideExcluded(el)) {
+            return;
+        }
 
         var origAttrStore = window.__ANTIGRAVITY_ORIG_ATTR_STORE__;
         var elAttrStore = origAttrStore.get(el);
@@ -682,6 +715,11 @@
             return;
         }
         if (root.nodeType === 1) {
+            var rootTag = root.tagName;
+            if (rootTag === "INPUT" || rootTag === "TEXTAREA") {
+                translateElementAttributes(root);
+                return;
+            }
             if (isInsideExcluded(root)) return;
 
             translateElementAttributes(root);
@@ -877,7 +915,7 @@
         }
         if (ctrl !== lastHoverControl) {
             lastHoverControl = ctrl;
-            translateElementAttributes(ctrl);
+            translateSubtree(ctrl);
         }
         // 在冒泡阶段即时触发微任务 + 同帧 rAF，确保与 React 共用 Tooltip 文案同帧完成翻译
         scheduleActiveOverlays(true);
@@ -886,6 +924,42 @@
     addTrackedListener(document, "mouseover", handleControlHover, { passive: true, capture: false });
 
     // 10. High-Performance Global MutationObserver (childList only, 0-DOM-Query Fast Path)
+    var SELECT_TRIGGER_SELECTOR = 'button[aria-haspopup], [role="combobox"], [data-slot="select-trigger"], select';
+    var pendingSelectNodes = [];
+    var selectSyncScheduled = false;
+    function flushPendingSelectNodes() {
+        selectSyncScheduled = false;
+        if (pendingSelectNodes.length === 0) return;
+        var batch = pendingSelectNodes;
+        pendingSelectNodes = [];
+        for (var i = 0; i < batch.length; i++) {
+            translateSubtree(batch[i]);
+        }
+    }
+    function queueDelayedSelectSync(el) {
+        if (!el || el.nodeType !== 1 || isInsideExcluded(el)) return;
+        var found = false;
+        if (typeof el.matches === "function" && el.matches(SELECT_TRIGGER_SELECTOR)) {
+            pendingSelectNodes.push(el);
+            found = true;
+        }
+        if (typeof el.querySelectorAll === "function" && el.childElementCount > 0) {
+            var triggers = el.querySelectorAll(SELECT_TRIGGER_SELECTOR);
+            for (var i = 0; i < triggers.length; i++) {
+                pendingSelectNodes.push(triggers[i]);
+                found = true;
+            }
+        }
+        if (found && !selectSyncScheduled) {
+            selectSyncScheduled = true;
+            if (typeof requestAnimationFrame === "function") {
+                requestAnimationFrame(flushPendingSelectNodes);
+            } else {
+                setTimeout(flushPendingSelectNodes, 16);
+            }
+        }
+    }
+
     var isTranslating = false;
     var observer = new MutationObserver(function (mutations) {
         if (isTranslating) return;
@@ -901,6 +975,7 @@
                         } else if (node.nodeType === 1) {
                             translateSubtree(node);
                             attachPopupObservers(node);
+                            queueDelayedSelectSync(node);
                         }
                     }
                 }

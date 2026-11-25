@@ -2693,13 +2693,13 @@
     "Number of hours": "小时数",
     "Time": "时间",
     "Days": "天",
-    "Sunday": "星期日",
-    "Monday": "星期一",
-    "Tuesday": "星期二",
-    "Wednesday": "星期三",
-    "Thursday": "星期四",
-    "Friday": "星期五",
-    "Saturday": "星期六",
+    "Sunday": "周日",
+    "Monday": "周一",
+    "Tuesday": "周二",
+    "Wednesday": "周三",
+    "Thursday": "周四",
+    "Friday": "周五",
+    "Saturday": "周六",
     "Sun": "周日",
     "Mon": "周一",
     "Tue": "周二",
@@ -4375,7 +4375,37 @@
     "Open in Side Conversation": "在侧边对话中打开",
     "Open in side conversation": "在侧边对话中打开",
     "View Side Question": "查看侧边对话",
-    "View side question": "查看侧边对话"
+    "View side question": "查看侧边对话",
+    "Required": "必填",
+    "required": "必填",
+    "• Required": "• 必填",
+    "Optional": "选填",
+    "optional": "选填",
+    "Every minute": "每分钟",
+    "Every 5 minutes": "每 5 分钟",
+    "Every 10 minutes": "每 10 分钟",
+    "Every 2 hours": "每 2 小时",
+    "Every 3 hours": "每 3 小时",
+    "Every 4 hours": "每 4 小时",
+    "Every 6 hours": "每 6 小时",
+    "Every 8 hours": "每 8 小时",
+    "Every 12 hours": "每 12 小时",
+    "Every weekend": "每周末",
+    "Once": "仅一次",
+    "Every Monday": "每周一",
+    "Every Tuesday": "每周二",
+    "Every Wednesday": "每周三",
+    "Every Thursday": "每周四",
+    "Every Friday": "每周五",
+    "Every Saturday": "每周六",
+    "Every Sunday": "每周日",
+    "on Monday": "每周一",
+    "on Tuesday": "每周二",
+    "on Wednesday": "每周三",
+    "on Thursday": "每周四",
+    "on Friday": "每周五",
+    "on Saturday": "每周六",
+    "on Sunday": "每周日"
   },
   "reverse_map": {
     "始终询问": [
@@ -6270,6 +6300,98 @@
     "重新加载页面": [
       "Reload page",
       "reload page"
+    ],
+    "必填": [
+      "Required",
+      "required"
+    ],
+    "每分钟": [
+      "Every minute"
+    ],
+    "每 5 分钟": [
+      "Every 5 minutes"
+    ],
+    "每 10 分钟": [
+      "Every 10 minutes"
+    ],
+    "每 15 分钟": [
+      "Every 15 minutes"
+    ],
+    "每 30 分钟": [
+      "Every 30 minutes"
+    ],
+    "每 2 小时": [
+      "Every 2 hours"
+    ],
+    "每 3 小时": [
+      "Every 3 hours"
+    ],
+    "每 4 小时": [
+      "Every 4 hours"
+    ],
+    "每 6 小时": [
+      "Every 6 hours"
+    ],
+    "每 8 小时": [
+      "Every 8 hours"
+    ],
+    "每 12 小时": [
+      "Every 12 hours"
+    ],
+    "每周末": [
+      "Every weekend"
+    ],
+    "仅一次": [
+      "Once"
+    ],
+    "每周一": [
+      "Every Monday",
+      "on Monday"
+    ],
+    "每周二": [
+      "Every Tuesday",
+      "on Tuesday"
+    ],
+    "每周三": [
+      "Every Wednesday",
+      "on Wednesday"
+    ],
+    "每周四": [
+      "Every Thursday",
+      "on Thursday"
+    ],
+    "每周五": [
+      "Every Friday",
+      "on Friday"
+    ],
+    "每周六": [
+      "Every Saturday",
+      "on Saturday"
+    ],
+    "每周日": [
+      "Every Sunday",
+      "on Sunday"
+    ],
+    "周一": [
+      "Monday"
+    ],
+    "周二": [
+      "Tuesday"
+    ],
+    "周三": [
+      "Wednesday"
+    ],
+    "周四": [
+      "Thursday"
+    ],
+    "周五": [
+      "Friday"
+    ],
+    "周六": [
+      "Saturday"
+    ],
+    "周日": [
+      "Sunday"
     ]
   },
   "regex_rules": [
