@@ -191,8 +191,9 @@
         if (/^[a-zA-Z0-9_\-\.\/\\]+\.(py|js|ts|tsx|jsx|json|ya?ml|md|sh|ps1|sql|html?|css|rs|go|cpp?|c|h|txt|log|lock|toml|env|gitignore)$/i.test(text)) return true;
         // Semantic versioning (e.g. v1.2.3, 2.0.0-beta)
         if (/^v?\d+\.\d+(\.\d+)?(-[a-zA-Z0-9\.]+)?$/i.test(text)) return true;
-        // CLI commands and arguments
-        if (/^(git|npm|npx|docker|python3?|node|yarn|pnpm|cargo|go|kubectl|agy)\s+[a-zA-Z0-9\-_]/i.test(text)) return true;
+        // CLI commands and arguments (case-sensitive lowercase command prefix, narrow `go` subcommands to avoid blocking UI phrases like "Go Back")
+        if (/^(?:git|npm|npx|docker|python3?|node|yarn|pnpm|cargo|kubectl|agy)\s+[a-zA-Z0-9\-_\.]/.test(text) ||
+            /^go\s+(?:run|build|test|mod|get|install|fmt|vet|env|version|clean|doc|generate|list|work)\b/.test(text)) return true;
         // Code identifiers (snake_case with 2+ parts or camelCase)
         if (/^[a-zA-Z0-9]+_[a-zA-Z0-9_]+$/.test(text) || /^[a-z]+[A-Z][a-zA-Z0-9]*$/.test(text)) return true;
         return false;
@@ -490,6 +491,11 @@
             var subject = mCannotChange[1];
             var tSubject = /^Model$/i.test(subject) ? "模型" : (/^Permissions?$/i.test(subject) ? "权限设置" : (/^Workspace$/i.test(subject) ? "工作区" : "设置"));
             return lead + "智能体运行过程中无法更改" + tSubject + trail;
+        }
+
+        // C13. 协议链接拼接自愈纠偏 (兼容旧版残留 "作者： using this app...")
+        if (/^作者：\s*using\s+this\s+app,\s*you\s+agree\s+to\s+its$/i.test(trimmed)) {
+            return lead + "使用本应用即表示您同意其" + trail;
         }
 
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;

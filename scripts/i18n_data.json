@@ -328,9 +328,9 @@
     "Terminal Commands": "终端命令",
     "Configure allowed terminal commands.": "配置允许执行的终端命令。",
     "Manage your plan, credentials, and general preferences.": "管理您的订阅计划、凭据与常规偏好设置。",
-    "Enable Telemetry": "启用使用情况统计 (Telemetry)",
+    "Enable Telemetry": "启用遥测数据收集",
     "When toggled on, Antigravity collects usage data to help Google enhance performance and features.": "开启后，Antigravity 将收集匿名使用数据，以帮助 Google 持续优化性能与功能体验。",
-    "Marketing Emails": "产品动态与营销邮件",
+    "Marketing Emails": "接收营销邮件",
     "Receive product updates, tips, and promotions from Google Antigravity via email.": "通过电子邮件接收来自 Google Antigravity 的产品更新、使用技巧与活动资讯。",
     "Sign Out": "退出登录",
     "Terms of Service": "服务条款",
@@ -4290,7 +4290,29 @@
     "Toggle Developer Tools": "切换开发者工具",
     "Reload Window": "重新加载窗口",
     "Check for Updates...": "检查更新...",
-    "Check for Updates…": "检查更新…"
+    "Check for Updates…": "检查更新…",
+    "Go back": "后退",
+    "go back": "后退",
+    "Go forward": "前进",
+    "go forward": "前进",
+    "Go back in pane": "在分栏中后退",
+    "Go Forward in Pane": "在分栏中前进",
+    "Go forward in pane": "在分栏中前进",
+    "Execute URLs": "网址操作权限",
+    "Execute Urls": "网址操作权限",
+    "execute urls": "网址操作权限",
+    "Execute URL": "网址操作权限",
+    "Enable telemetry": "启用遥测数据收集",
+    "enable telemetry": "启用遥测数据收集",
+    "Marketing emails": "接收营销邮件",
+    "marketing emails": "接收营销邮件",
+    "By using this app, you agree to its": "使用本应用即表示您同意其",
+    "by using this app, you agree to its": "使用本应用即表示您同意其",
+    "By using this app, you agree to its Terms of Service": "使用本应用即表示您同意其服务条款",
+    "By using this app, you agree to its Terms of Service.": "使用本应用即表示您同意其服务条款。",
+    "terms of service": "服务条款",
+    "Privacy Policy": "隐私政策",
+    "privacy policy": "隐私政策"
   },
   "reverse_map": {
     "始终询问": [
@@ -4705,9 +4727,10 @@
       "Capture screenshot"
     ],
     "前进": [
-      "Forward",
       "Go Forward",
-      "forward"
+      "Go forward",
+      "go forward",
+      "Forward"
     ],
     "查看网站信息": [
       "View Site Information",
@@ -6150,6 +6173,25 @@
       "Font Size",
       "Font size",
       "font size"
+    ],
+    "后退": [
+      "Go Back",
+      "Go back",
+      "go back"
+    ],
+    "网址操作权限": [
+      "Execute URLs",
+      "execute urls"
+    ],
+    "启用遥测数据收集": [
+      "Enable telemetry",
+      "Enable Telemetry",
+      "enable telemetry"
+    ],
+    "接收营销邮件": [
+      "Marketing emails",
+      "Marketing Emails",
+      "marketing emails"
     ]
   },
   "regex_rules": [
@@ -7070,10 +7112,6 @@
       "replacement": "打开外部链接: $1"
     },
     {
-      "pattern": "^(?:运行|Run) deep audit(.*)$",
-      "replacement": "运行深度审核$1"
-    },
-    {
       "pattern": "^Branch,\\s*current:\\s*(.+)$",
       "replacement": "分支，当前：$1"
     },
@@ -7142,19 +7180,19 @@
       "replacement": "版本 $1"
     },
     {
-      "pattern": "^From\\s+(.+)$",
+      "pattern": "^From\\s+([A-Za-z0-9_\\-@\\.]{1,28})$",
       "replacement": "来自 $1"
     },
     {
-      "pattern": "^Every (.+)$",
+      "pattern": "^Every (\\d+\\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?)|second|minute|hour|day|week|month|weekday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
       "replacement": "每 $1"
     },
     {
-      "pattern": "^To\\s+(.+)$",
+      "pattern": "^To\\s+([A-Za-z0-9_\\-@\\.]{1,28})$",
       "replacement": "发送给 $1"
     },
     {
-      "pattern": "^By (.*)$",
+      "pattern": "^By ([A-Z][A-Za-z0-9._\\-]{1,24}(?:\\s+[A-Z][A-Za-z0-9._\\-]{1,24}){0,2})$",
       "replacement": "作者：$1"
     },
     {
