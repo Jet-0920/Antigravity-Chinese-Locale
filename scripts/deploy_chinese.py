@@ -616,11 +616,24 @@ def main():
     target_asar = os.path.join(resources_dir, "app.asar")
     backup_asar = os.path.join(resources_dir, "app.asar.bak")
 
-    # 3. 官方原版纯净备份确立 (app.asar.bak 作为不可变源语料)
+    # 3. 官方原版纯净备份确立 (app.asar.bak 作为不可变源语料；若检测到官方版本更新覆盖了 app.asar 则自动刷新备份)
+    is_target_pristine = False
+    try:
+        with open(target_asar, "rb") as tf:
+            header_chunk = tf.read(1024 * 1024)
+            if len(header_chunk) > 1024 and b"package.json" in header_chunk and b"i18n_runner.js" not in header_chunk:
+                is_target_pristine = True
+    except Exception:
+        is_target_pristine = False
+
     if not os.path.exists(backup_asar):
         print("[*] Creating initial pristine backup: app.asar.bak ...")
         shutil.copy2(target_asar, backup_asar)
         print("[✓] Backup completed.")
+    elif is_target_pristine:
+        print("[*] Official Antigravity update detected (unpatched app.asar). Updating app.asar.bak ...")
+        shutil.copy2(target_asar, backup_asar)
+        print("[✓] Pristine backup refreshed to latest official version.")
     else:
         print("[✓] Pristine official backup detected (app.asar.bak).")
 
