@@ -8,11 +8,15 @@ Google Antigravity 官方客户端一键安全汉化与全生命周期持久化�
 Features:
 - Auto-detects Antigravity resources folder across Windows, macOS & Linux
 - Automatic pristine backup (app.asar.bak)
-- Microtask loop prevention & Base UI controlled component bridge
-- Full WebContents lifecycle hook (prevents reverting on restart, refresh, or child windows)
-- Static syntax gatekeeper (node --check on all modified files)
+- Pure clean-source unpacking from backup (eliminates listener compounding / 6x leak)
+- Physical isolation copytree (zero mklink/symlink hazard for production unpacked directory)
+- OS-native kernel file event hot-reloading (fs.watch on resources/i18n_live.json & i18n_runner_live.js, 0 CPU polling)
+- In-memory context menu translation cache (0 disk I/O latency)
+- Full WebContents broadcast (electron.webContents.getAllWebContents, covers BaseWindow/hubWcv & Swarm Board)
+- Native ApplicationMenu & Tray dynamic hot-rebuild without client restart
+- Fixes updater.js MenuUpdateStep enum localization without breaking update check actions
+- Static syntax gatekeeper (node --check on all modified files & vm.Script validation on assembled payload)
 - Atomic replacement of app.asar & app.asar.unpacked
-- Optional live hot-reload via Chrome DevTools Protocol (CDP)
 """
 
 import os
@@ -36,53 +40,208 @@ def find_antigravity_resources():
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
         p = os.path.join(local_app_data, "Programs", "antigravity", "resources")
-        if os.path.exists(p) and os.path.exists(os.path.join(p, "app.asar")):
+        if os.path.exists(p) and (os.path.exists(os.path.join(p, "app.asar")) or os.path.exists(os.path.join(p, "app.asar.bak"))):
             return p
     # 2. macOS default path
     mac_path = "/Applications/Antigravity.app/Contents/Resources"
-    if os.path.exists(mac_path) and os.path.exists(os.path.join(mac_path, "app.asar")):
+    if os.path.exists(mac_path) and (os.path.exists(os.path.join(mac_path, "app.asar")) or os.path.exists(os.path.join(mac_path, "app.asar.bak"))):
         return mac_path
     # 3. Linux default path
     linux_path = "/opt/Antigravity/resources"
-    if os.path.exists(linux_path) and os.path.exists(os.path.join(linux_path, "app.asar")):
+    if os.path.exists(linux_path) and (os.path.exists(os.path.join(linux_path, "app.asar")) or os.path.exists(os.path.join(linux_path, "app.asar.bak"))):
         return linux_path
     return None
 
 
 def patchNativeMenusAndTray(dist_dir, modified_files):
-    # 1. 汉化 dist/tray.js
+    # 1. 汉化与修复 dist/updater.js (安全本地化 MenuUpdateStep 枚举字符串，保持引用契约完整)
+    updater_js = os.path.join(dist_dir, "updater.js")
+    if os.path.exists(updater_js):
+        with open(updater_js, "r", encoding="utf-8") as f:
+            up_content = f.read()
+        
+        # 汉化 MenuUpdateStep 枚举的 4 个真实字符串值
+        up_content = up_content.replace('MenuUpdateStep["CheckForUpdates"] = "Check for Updates";', 'MenuUpdateStep["CheckForUpdates"] = "检查更新";')
+        up_content = up_content.replace('MenuUpdateStep["CheckingForUpdates"] = "Checking for Updates...";', 'MenuUpdateStep["CheckingForUpdates"] = "正在检查更新...";')
+        up_content = up_content.replace('MenuUpdateStep["DownloadingUpdate"] = "Downloading Update...";', 'MenuUpdateStep["DownloadingUpdate"] = "正在下载更新...";')
+        up_content = up_content.replace('MenuUpdateStep["RestartToUpdate"] = "Restart to Update";', 'MenuUpdateStep["RestartToUpdate"] = "重启以应用更新";')
+        
+        # 弹窗提示汉化
+        up_content = up_content.replace("title: 'Check for Updates',", "title: '检查更新',")
+        up_content = up_content.replace("message: 'No updates available',", "message: '当前已是最新版本',")
+        
+        with open(updater_js, "w", encoding="utf-8") as f:
+            f.write(up_content)
+        if updater_js not in modified_files:
+            modified_files.append(updater_js)
+
+    # 2. 汉化与增强 dist/tray.js (增加 refreshTrayMenu 导出支持免重启热刷新)
     tray_js = os.path.join(dist_dir, "tray.js")
     if os.path.exists(tray_js):
         with open(tray_js, "r", encoding="utf-8") as f:
             t_content = f.read()
         
-        # 替换智能体运行计数标签
         old_count_pattern = r"\(count > 0 \? `\$\{count\}` : 'No'\) \+\s*' agent' \+\s*\(count === 1 \? '' : 's'\) \+\s*' running'"
         new_count_code = "count > 0 ? (count + ' 个智能体正在运行') : '暂无运行中的智能体'"
         t_content = re.sub(old_count_pattern, new_count_code, t_content)
         t_content = t_content.replace("'No agents running'", "'暂无运行中的智能体'")
         
+        # 注入 refreshTrayMenu 支持动态更新系统托盘
+        if "exports.refreshTrayMenu" not in t_content:
+            tray_export_hook = "exports.updateTrayAgentCount = updateTrayAgentCount;\nexports.refreshTrayMenu = refreshTrayMenu;\n"
+            t_content = t_content.replace("exports.updateTrayAgentCount = updateTrayAgentCount;\n", tray_export_hook, 1)
+            
+            refresh_tray_func = (
+                "\n/**\n"
+                " * Dynamically refreshes the tray context menu using the latest i18n dictionary.\n"
+                " */\n"
+                "function refreshTrayMenu(dict) {\n"
+                "    if (!tray || !contextMenu) return;\n"
+                "    try {\n"
+                "        const exact = dict?.exact || {};\n"
+                "        contextMenu.items.forEach(item => {\n"
+                "            if (item.id === 'running-agents') return;\n"
+                "            if (item.label) {\n"
+                "                if (!item.__origLabel) item.__origLabel = item.label;\n"
+                "                const orig = item.__origLabel;\n"
+                "                if (exact[orig]) {\n"
+                "                    item.label = exact[orig];\n"
+                "                }\n"
+                "            }\n"
+                "        });\n"
+                "        tray.setContextMenu(contextMenu);\n"
+                "    } catch(e) {\n"
+                "        console.error('[Antigravity i18n] refreshTrayMenu error:', e);\n"
+                "    }\n"
+                "}\n"
+            )
+            t_content += refresh_tray_func
+        
         with open(tray_js, "w", encoding="utf-8") as f:
             f.write(t_content)
-        modified_files.append(tray_js)
+        if tray_js not in modified_files:
+            modified_files.append(tray_js)
 
-    # 2. 汉化 dist/menu.js
+    # 3. 汉化与增强 dist/menu.js (保持 updater 引用契约，支持 refreshApplicationMenu 动态热重构)
     menu_js = os.path.join(dist_dir, "menu.js")
     if os.path.exists(menu_js):
         with open(menu_js, "r", encoding="utf-8") as f:
             m_content = f.read()
         
+        # 保护 updater_1.MenuUpdateStep.CheckForUpdates 引用，绝不将其破坏为硬编码字符串！
         m_content = m_content.replace("label: 'New Window'", "label: '新建窗口'")
         m_content = m_content.replace("label: 'Docs'", "label: '官方文档'")
         m_content = m_content.replace("label: 'Connect to WSL'", "label: '连接到 WSL'")
         m_content = m_content.replace("label: 'Reopen Locally'", "label: '在本地重新打开'")
-        m_content = m_content.replace("label: updater_1.MenuUpdateStep.CheckForUpdates", "label: '检查更新'")
         
+        # 增强 addItemToSubmenu：使其兼容中英文两种匹配键（防止 setupApplicationMenu 汉化 'File' 导致后续异步 addWslConnectMenu 失效）
+        old_add_item = (
+            "function addItemToSubmenu(appMenu, submenuLabel, position, item) {\n"
+            "    const submenuItem = appMenu.items.find((item) => item.label === submenuLabel);\n"
+            "    if (!submenuItem?.submenu) {\n"
+            "        return;\n"
+            "    }\n"
+            "    submenuItem.submenu.insert(position, item);\n"
+            "}"
+        )
+        new_add_item = (
+            "function addItemToSubmenu(appMenu, submenuLabel, position, item) {\n"
+            "    const altLabel = submenuLabel === 'File' ? '文件' : (submenuLabel === 'Help' ? '帮助' : (submenuLabel === 'View' ? '视图' : submenuLabel));\n"
+            "    const submenuItem = appMenu.items.find((item) => item.label === submenuLabel || item.label === altLabel || item.__origLabel === submenuLabel);\n"
+            "    if (!submenuItem?.submenu) {\n"
+            "        return;\n"
+            "    }\n"
+            "    submenuItem.submenu.insert(position, item);\n"
+            "}"
+        )
+        if old_add_item in m_content:
+            m_content = m_content.replace(old_add_item, new_add_item, 1)
+
+        # 在 setupApplicationMenu 结尾增加顶层与子项全量汉化与 export refreshApplicationMenu
+        if "exports.refreshApplicationMenu" not in m_content:
+            m_content = m_content.replace("exports.setupApplicationMenu = setupApplicationMenu;\n", "exports.setupApplicationMenu = setupApplicationMenu;\nexports.refreshApplicationMenu = refreshApplicationMenu;\n", 1)
+            
+            top_level_patch = (
+                "    const topLevelZh = { 'File': '文件', 'Edit': '编辑', 'View': '视图', 'Window': '窗口', 'Help': '帮助' };\n"
+                "    menu.items.forEach(it => {\n"
+                "        if (it.label) {\n"
+                "            if (!it.__origLabel) it.__origLabel = it.label;\n"
+                "            if (topLevelZh[it.label]) it.label = topLevelZh[it.label];\n"
+                "        }\n"
+                "    });\n"
+                "    electron_1.Menu.setApplicationMenu(menu);\n"
+                "    try {\n"
+                "        const utilsMod = require('./utils');\n"
+                "        const initDict = (utilsMod && typeof utilsMod.getMenuDict === 'function') ? utilsMod.getMenuDict() : null;\n"
+                "        refreshApplicationMenu(initDict);\n"
+                "    } catch(e) {}\n"
+                "    // Asynchronously adds \"Connect to WSL\""
+            )
+            m_content = m_content.replace("    // Asynchronously adds \"Connect to WSL\"", top_level_patch, 1)
+
+            # 在 addWslConnectMenu 完成后也执行一次安全重绘
+            old_add_wsl = "electron_1.Menu.setApplicationMenu(menu);\n}"
+            new_add_wsl = (
+                "electron_1.Menu.setApplicationMenu(menu);\n"
+                "    try {\n"
+                "        const utilsMod = require('./utils');\n"
+                "        const initDict = (utilsMod && typeof utilsMod.getMenuDict === 'function') ? utilsMod.getMenuDict() : null;\n"
+                "        refreshApplicationMenu(initDict);\n"
+                "    } catch(e) {}\n}"
+            )
+            if old_add_wsl in m_content:
+                m_content = m_content.replace(old_add_wsl, new_add_wsl, 1)
+
+            refresh_menu_func = (
+                "\n/**\n"
+                " * Dynamically refreshes the top application menu using the latest i18n dictionary.\n"
+                " */\n"
+                "function refreshApplicationMenu(dict) {\n"
+                "    try {\n"
+                "        const menu = electron_1.Menu.getApplicationMenu();\n"
+                "        if (!menu) return;\n"
+                "        const exact = dict?.exact || {};\n"
+                "        const fallback = {\n"
+                "            'File': '文件', 'Edit': '编辑', 'View': '视图', 'Window': '窗口', 'Help': '帮助',\n"
+                "            'New Window': '新建窗口', 'Close Window': '关闭窗口', 'Close': '关闭',\n"
+                "            'Undo': '撤销', 'Redo': '重做', 'Cut': '剪切', 'Copy': '复制', 'Paste': '粘贴',\n"
+                "            'Paste and Match Style': '粘贴并匹配样式', 'Select All': '全选', 'Delete': '删除',\n"
+                "            'Reload': '重新加载', 'Force Reload': '强制重新加载', 'Toggle Developer Tools': '切换开发者工具',\n"
+                "            'Actual Size': '实际大小', 'Zoom In': '放大', 'Zoom Out': '缩小', 'Toggle Full Screen': '切换全屏',\n"
+                "            'Minimize': '最小化', 'Zoom': '缩放', 'Bring All to Front': '前置全部窗口',\n"
+                "            'Docs': '官方文档', 'Documentation': '官方文档', 'Check for Updates': '检查更新',\n"
+                "            'Connect to WSL': '连接到 WSL', 'Reopen Locally': '在本地重新打开'\n"
+                "        };\n"
+                "        const walk = (item) => {\n"
+                "            if (!item) return;\n"
+                "            if (item.label) {\n"
+                "                if (!item.__origLabel) item.__origLabel = item.label;\n"
+                "                const orig = item.__origLabel;\n"
+                "                if (exact[orig]) {\n"
+                "                    item.label = exact[orig];\n"
+                "                } else if (fallback[orig]) {\n"
+                "                    item.label = fallback[orig];\n"
+                "                }\n"
+                "            }\n"
+                "            if (item.submenu && Array.isArray(item.submenu.items)) {\n"
+                "                item.submenu.items.forEach(walk);\n"
+                "            }\n"
+                "        };\n"
+                "        menu.items.forEach(walk);\n"
+                "        electron_1.Menu.setApplicationMenu(menu);\n"
+                "    } catch(e) {\n"
+                "        console.error('[Antigravity i18n] refreshApplicationMenu error:', e);\n"
+                "    }\n"
+                "}\n"
+            )
+            m_content += refresh_menu_func
+
         with open(menu_js, "w", encoding="utf-8") as f:
             f.write(m_content)
-        modified_files.append(menu_js)
+        if menu_js not in modified_files:
+            modified_files.append(menu_js)
 
-    # 3. 汉化 dist/main.js
+    # 4. 汉化 dist/main.js
     main_js = os.path.join(dist_dir, "main.js")
     if os.path.exists(main_js):
         with open(main_js, "r", encoding="utf-8") as f:
@@ -103,7 +262,7 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         if main_js not in modified_files:
             modified_files.append(main_js)
 
-    # 4. 汉化 dist/computer/hud.js 与 dist/computer/hudState.js (v2.33 / v2.34+ 桌面控制悬浮指示器)
+    # 5. 汉化 dist/computer/hud.js 与 dist/computer/hudState.js (桌面控制悬浮指示器)
     hud_js = os.path.join(dist_dir, "computer", "hud.js")
     if os.path.exists(hud_js):
         with open(hud_js, "r", encoding="utf-8") as f:
@@ -141,7 +300,7 @@ def patchNativeMenusAndTray(dist_dir, modified_files):
         if hud_state_js not in modified_files:
             modified_files.append(hud_state_js)
 
-    # 5. 汉化 dist/ipcHandlers.js (拦截原生系统上下文菜单 window:show-context-menu)
+    # 6. 汉化 dist/ipcHandlers.js (拦截原生系统上下文菜单 window:show-context-menu)
     ipc_js = os.path.join(dist_dir, "ipcHandlers.js")
     if os.path.exists(ipc_js):
         with open(ipc_js, "r", encoding="utf-8") as f:
@@ -373,9 +532,8 @@ def broadcast_cdp(script_dir):
         
         full_code = (
             "window.__ANTIGRAVITY_I18N_DATA__ = " + dt_str + ";\n" +
-            rn_str + "\n" +
-            "if (typeof window.__antigravity_reload_i18n === 'function') { window.__antigravity_reload_i18n(window.__ANTIGRAVITY_I18N_DATA__); }" +
-            "else if (typeof window.__antigravity_translateWholePage === 'function') { window.__antigravity_translateWholePage(); }"
+            "if (typeof window.__antigravity_cleanup_i18n === 'function') { try { window.__antigravity_cleanup_i18n(); } catch(e) {} }\n" +
+            rn_str + "\n"
         )
         
         hot_targets = [t for t in targets if t.get("webSocketDebuggerUrl") and (
@@ -417,7 +575,7 @@ def broadcast_cdp(script_dir):
             with open(eval_file, "w", encoding="utf-8") as f:
                 f.write(node_eval)
             subprocess.run(["node", eval_file], capture_output=True)
-            print(f"[✓] Successfully broadcasted hot-reload to {len(hot_targets)} targets (pages & swarm iframes)!")
+            print(f"[✓] Successfully broadcasted hot-reload to {len(hot_targets)} targets via CDP!")
             return len(hot_targets)
     except Exception as e:
         print("[!] CDP hot reload notice:", e)
@@ -448,25 +606,25 @@ def main():
     if not resources_dir:
         print("[!] Antigravity installation not detected in standard path.")
         user_in = input("Please input the 'resources' folder path of Antigravity: ").strip()
-        if os.path.exists(user_in) and os.path.exists(os.path.join(user_in, "app.asar")):
+        if os.path.exists(user_in) and (os.path.exists(os.path.join(user_in, "app.asar")) or os.path.exists(os.path.join(user_in, "app.asar.bak"))):
             resources_dir = user_in
         else:
-            print("[Error] Invalid path or app.asar not found.")
+            print("[Error] Invalid path or app.asar / app.asar.bak not found.")
             sys.exit(1)
 
     print(f"[✓] Antigravity resources found: {resources_dir}")
     target_asar = os.path.join(resources_dir, "app.asar")
     backup_asar = os.path.join(resources_dir, "app.asar.bak")
 
-    # 3. 官方原版纯净备份
+    # 3. 官方原版纯净备份确立 (app.asar.bak 作为不可变源语料)
     if not os.path.exists(backup_asar):
-        print("[*] Creating initial backup: app.asar.bak ...")
+        print("[*] Creating initial pristine backup: app.asar.bak ...")
         shutil.copy2(target_asar, backup_asar)
         print("[✓] Backup completed.")
     else:
-        print("[✓] Existing backup detected (app.asar.bak).")
+        print("[✓] Pristine official backup detected (app.asar.bak).")
 
-    # 4. 解包与注入
+    # 4. 从官方原版纯净备份提取与注入
     script_dir = os.path.dirname(os.path.abspath(__file__))
     i18n_runner_src = os.path.join(script_dir, "i18n_runner.js")
     i18n_data_src = os.path.join(script_dir, "i18n_data.json")
@@ -479,22 +637,44 @@ def main():
     is_hot = "--hot" in sys.argv or "-h" in sys.argv
     if is_hot:
         print("[*] 正在执行极速无缝热更新 (--hot模式)...")
+        patchSwarmSidecar()
         live_json = os.path.join(resources_dir, "i18n_live.json")
+        live_runner = os.path.join(resources_dir, "i18n_runner_live.js")
         shutil.copy2(i18n_data_src, live_json)
-        print(f"[✓] 外部物理热重载源已就绪: {live_json}")
+        shutil.copy2(i18n_runner_src, live_runner)
+        print(f"[✓] 外部双物理热重载源已就绪: {live_json} & {live_runner}")
         broadcast_cdp(script_dir)
         print("=" * 60)
         print("  [✓] 极速热更新完成！修改已推送至物理热更新源与全部活跃页面。")
         print("=" * 60)
         return
 
+    is_dry_run = "--dry-run" in sys.argv
+    if is_dry_run:
+        print("[*] 正在以 Dry-Run 沙箱模拟模式运行，绝不覆盖生产环境 app.asar ...")
+
     npx_bin = "npx.cmd" if sys.platform == "win32" else "npx"
     work_dir = tempfile.mkdtemp(prefix="antigravity_i18n_")
-    try:
-        print("[*] Extracting app.asar into temporary sandbox...")
-        subprocess.run(f'{npx_bin} --yes @electron/asar extract "{target_asar}" "{work_dir}"', shell=True, check=True)
+    clean_sandbox = os.path.join(work_dir, "sandbox")
+    extract_dir = os.path.join(work_dir, "extract")
+    os.makedirs(clean_sandbox, exist_ok=True)
+    os.makedirs(extract_dir, exist_ok=True)
 
-        dist_dir = os.path.join(work_dir, "dist")
+    try:
+        # 4.1 纯净解包：从不可变的 backup_asar 解包，从物理根源彻底消除 6 重监听器泄漏与累积污染
+        clean_src_asar = os.path.join(clean_sandbox, "clean_src.asar")
+        shutil.copy2(backup_asar, clean_src_asar)
+
+        target_unpacked = target_asar + ".unpacked"
+        clean_src_unpacked = clean_src_asar + ".unpacked"
+        # 严禁使用 mklink /J 或 symlink！采用安全的物理隔离 copytree，杜绝 finally rmtree 穿透删除生产环境
+        if os.path.exists(target_unpacked):
+            shutil.copytree(target_unpacked, clean_src_unpacked)
+
+        print("[*] Extracting pristine official backup (clean_src.asar) into temporary sandbox...")
+        subprocess.run(f'{npx_bin} --yes @electron/asar extract "{clean_src_asar}" "{extract_dir}"', shell=True, check=True)
+
+        dist_dir = os.path.join(extract_dir, "dist")
         os.makedirs(dist_dir, exist_ok=True)
         shutil.copy2(i18n_runner_src, os.path.join(dist_dir, "i18n_runner.js"))
         shutil.copy2(i18n_data_src, os.path.join(dist_dir, "i18n_data.json"))
@@ -503,7 +683,7 @@ def main():
         main_js = os.path.join(dist_dir, "main.js")
         modified_files = []
 
-        # A. 注入 utils.js (主窗体生命周期与唤醒补偿)
+        # A. 注入 utils.js (主进程热更新总线、双文件支持、OS内核fs.watch、零IO右键菜单、全量webContents广播)
         with open(utils_js, "r", encoding="utf-8") as f:
             u_content = f.read()
 
@@ -512,6 +692,7 @@ def main():
             "const _path = require('path');\n"
             "let _cachedAntigravityI18nScript = null;\n"
             "let _lastI18nMtime = 0;\n"
+            "let _menuDictCache = null;\n"
             "const getPhysicalResourcesPath = () => {\n"
             "    try {\n"
             "        if (typeof process !== 'undefined' && process.resourcesPath) return process.resourcesPath;\n"
@@ -520,41 +701,71 @@ def main():
             "    } catch(e) {}\n"
             "    try { return _path.resolve(__dirname, '../../'); } catch(e) { return ''; }\n"
             "};\n"
+            "const refreshMenuDictCache = () => {\n"
+            "    try {\n"
+            "        const resDir = getPhysicalResourcesPath();\n"
+            "        const livePath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
+            "        const asarPath = _path.join(__dirname, 'i18n_data.json');\n"
+            "        let targetPath = (livePath && _fs.existsSync(livePath)) ? livePath : asarPath;\n"
+            "        if (_fs.existsSync(targetPath)) {\n"
+            "            const dataStr = _fs.readFileSync(targetPath, 'utf-8');\n"
+            "            const dict = JSON.parse(dataStr);\n"
+            "            _menuDictCache = {\n"
+            "                dict: dict,\n"
+            "                exact: dict.exact || {},\n"
+            "                reverseMap: dict.reverse_map || {},\n"
+            "                regexRules: (dict.regex_rules || []).map(r => {\n"
+            "                    try { return { re: new RegExp(r.pattern), rep: r.replacement }; }\n"
+            "                    catch(e) { return null; }\n"
+            "                }).filter(Boolean)\n"
+            "            };\n"
+            "            return dict;\n"
+            "        }\n"
+            "    } catch(e) {\n"
+            "        console.error('[Antigravity i18n] refreshMenuDictCache error:', e);\n"
+            "    }\n"
+            "    return null;\n"
+            "};\n"
+            "const getMenuDict = () => {\n"
+            "    if (!_menuDictCache) refreshMenuDictCache();\n"
+            "    return _menuDictCache?.dict || null;\n"
+            "};\n"
             "const getAntigravityI18nScript = (forceReload = false) => {\n"
             "    try {\n"
-            "        const runnerPath = _path.join(__dirname, 'i18n_runner.js');\n"
+            "        const asarRunnerPath = _path.join(__dirname, 'i18n_runner.js');\n"
             "        const asarDataPath = _path.join(__dirname, 'i18n_data.json');\n"
             "        const resDir = getPhysicalResourcesPath();\n"
             "        const liveDataPath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
+            "        const liveRunnerPath = resDir ? _path.join(resDir, 'i18n_runner_live.js') : '';\n"
             "        let targetDataPath = asarDataPath;\n"
             "        if (liveDataPath && _fs.existsSync(liveDataPath)) {\n"
             "            targetDataPath = liveDataPath;\n"
             "        }\n"
-            "        if (_fs.existsSync(runnerPath) && _fs.existsSync(targetDataPath)) {\n"
-            "            const stat1 = _fs.statSync(runnerPath);\n"
+            "        let targetRunnerPath = asarRunnerPath;\n"
+            "        if (liveRunnerPath && _fs.existsSync(liveRunnerPath)) {\n"
+            "            targetRunnerPath = liveRunnerPath;\n"
+            "        }\n"
+            "        if (_fs.existsSync(targetRunnerPath) && _fs.existsSync(targetDataPath)) {\n"
+            "            const stat1 = _fs.statSync(targetRunnerPath);\n"
             "            const stat2 = _fs.statSync(targetDataPath);\n"
             "            const currentMtime = Math.max(stat1.mtimeMs, stat2.mtimeMs);\n"
             "            if (!forceReload && _cachedAntigravityI18nScript && _lastI18nMtime === currentMtime) {\n"
             "                return _cachedAntigravityI18nScript;\n"
             "            }\n"
             "            const dataStr = _fs.readFileSync(targetDataPath, 'utf-8');\n"
-            "            const runnerCode = _fs.readFileSync(runnerPath, 'utf-8');\n"
-            "            _cachedAntigravityI18nScript = `\n"
-            "                (function(){\n"
-            "                    try {\n"
-            "                        var _i18n_data = ${JSON.stringify(JSON.parse(dataStr))};\n"
-            "                        window.__ANTIGRAVITY_I18N_DATA__ = _i18n_data;\n"
-            "                        ${runnerCode}\n"
-            "                        if (typeof window.__antigravity_reload_i18n === 'function') {\n"
-            "                            window.__antigravity_reload_i18n(_i18n_data);\n"
-            "                        } else if (typeof window.__antigravity_translateWholePage === 'function') {\n"
-            "                            window.__antigravity_translateWholePage();\n"
-            "                        }\n"
-            "                    } catch(e) {\n"
-            "                        console.error('[Antigravity i18n] Error executing i18n runner:', e);\n"
-            "                    }\n"
-            "                })();\n"
-            "            `;\n"
+            "            const runnerCode = _fs.readFileSync(targetRunnerPath, 'utf-8');\n"
+            "            _cachedAntigravityI18nScript = '(function(){\\n' +\n"
+            "                '    try {\\n' +\n"
+            "                '        var _i18n_data = ' + JSON.stringify(JSON.parse(dataStr)) + ';\\n' +\n"
+            "                '        window.__ANTIGRAVITY_I18N_DATA__ = _i18n_data;\\n' +\n"
+            "                '        if (typeof window.__antigravity_cleanup_i18n === \"function\") {\\n' +\n"
+            "                '            try { window.__antigravity_cleanup_i18n(); } catch(e) {}\\n' +\n"
+            "                '        }\\n' +\n"
+            "                runnerCode + '\\n' +\n"
+            "                '    } catch(e) {\\n' +\n"
+            "                '        console.error(\"[Antigravity i18n] Error executing i18n runner:\", e);\\n' +\n"
+            "                '    }\\n' +\n"
+            "                '})();';\n"
             "            _lastI18nMtime = currentMtime;\n"
             "            return _cachedAntigravityI18nScript;\n"
             "        }\n"
@@ -581,84 +792,110 @@ def main():
             "const setupLiveWatch = () => {\n"
             "    try {\n"
             "        const resDir = getPhysicalResourcesPath();\n"
-            "        const livePath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
-            "        if (!livePath) return;\n"
+            "        if (!resDir || !_fs.existsSync(resDir)) return;\n"
+            "        refreshMenuDictCache();\n"
             "        const broadcastNewData = (attempt = 1) => {\n"
             "            try {\n"
+            "                const livePath = _path.join(resDir, 'i18n_live.json');\n"
+            "                const liveRunnerPath = _path.join(resDir, 'i18n_runner_live.js');\n"
             "                if (!_fs.existsSync(livePath)) return;\n"
-            "                const raw = _fs.readFileSync(livePath, 'utf-8');\n"
-            "                if (!raw || !raw.trim()) throw new Error('Empty file content');\n"
-            "                const dataObj = JSON.parse(raw);\n"
-            "                if (!dataObj || !dataObj.exact || Object.keys(dataObj.exact).length < 100) {\n"
+            "                const dict = refreshMenuDictCache();\n"
+            "                if (!dict || !dict.exact || Object.keys(dict.exact).length < 100) {\n"
             "                    throw new Error('Validation failed');\n"
             "                }\n"
-            "                const dispatchScript = `\n"
-            "                    (function() {\n"
-            "                        try {\n"
-            "                            var d = ${JSON.stringify(dataObj)};\n"
-            "                            if (typeof window.__antigravity_reload_i18n === 'function') {\n"
-            "                                window.__antigravity_reload_i18n(d);\n"
-            "                            } else if (typeof window.__antigravity_translateWholePage === 'function') {\n"
-            "                                window.__ANTIGRAVITY_I18N_DATA__ = d;\n"
-            "                                window.__antigravity_translateWholePage();\n"
-            "                            }\n"
-            "                        } catch(e) {\n"
-            "                            console.error('[Antigravity i18n Hot-Reload Error]', e);\n"
-            "                        }\n"
-            "                    })();\n"
-            "                `;\n"
-            "                const electron = require('electron');\n"
-            "                const wins = electron.BrowserWindow ? electron.BrowserWindow.getAllWindows() : [];\n"
-            "                wins.forEach(win => {\n"
-            "                    if (win && win.webContents && !win.webContents.isDestroyed()) {\n"
-            "                        win.webContents.executeJavaScript(dispatchScript).catch(() => {});\n"
+            "                try {\n"
+            "                    const menuMod = require('./menu');\n"
+            "                    if (menuMod && typeof menuMod.refreshApplicationMenu === 'function') {\n"
+            "                        menuMod.refreshApplicationMenu(dict);\n"
             "                    }\n"
+            "                } catch(e) {}\n"
+            "                try {\n"
+            "                    const trayMod = require('./tray');\n"
+            "                    if (trayMod && typeof trayMod.refreshTrayMenu === 'function') {\n"
+            "                        trayMod.refreshTrayMenu(dict);\n"
+            "                    }\n"
+            "                } catch(e) {}\n"
+            "                let runnerCode = '';\n"
+            "                const asarRunnerPath = _path.join(__dirname, 'i18n_runner.js');\n"
+            "                const targetRunner = (liveRunnerPath && _fs.existsSync(liveRunnerPath)) ? liveRunnerPath : asarRunnerPath;\n"
+            "                if (_fs.existsSync(targetRunner)) {\n"
+            "                    runnerCode = _fs.readFileSync(targetRunner, 'utf-8');\n"
+            "                }\n"
+            "                let dispatchScript = '';\n"
+            "                if (runnerCode && runnerCode.trim()) {\n"
+            "                    dispatchScript = '(function(){\\n' +\n"
+            "                        '    try {\\n' +\n"
+            "                        '        var d = ' + JSON.stringify(dict) + ';\\n' +\n"
+            "                        '        window.__ANTIGRAVITY_I18N_DATA__ = d;\\n' +\n"
+            "                        '        if (typeof window.__antigravity_cleanup_i18n === \"function\") {\\n' +\n"
+            "                        '            try { window.__antigravity_cleanup_i18n(); } catch(e) {}\\n' +\n"
+            "                        '        }\\n' +\n"
+            "                        runnerCode + '\\n' +\n"
+            "                        '    } catch(e) {\\n' +\n"
+            "                        '        console.error(\"[Antigravity i18n Hot-Reload Error]\", e);\\n' +\n"
+            "                        '    }\\n' +\n"
+            "                        '})();';\n"
+            "                } else {\n"
+            "                    dispatchScript = '(function(){\\n' +\n"
+            "                        '    try {\\n' +\n"
+            "                        '        var d = ' + JSON.stringify(dict) + ';\\n' +\n"
+            "                        '        window.__ANTIGRAVITY_I18N_DATA__ = d;\\n' +\n"
+            "                        '        if (typeof window.__antigravity_reload_i18n === \"function\") {\\n' +\n"
+            "                        '            window.__antigravity_reload_i18n(d);\\n' +\n"
+            "                        '        } else if (typeof window.__antigravity_translateWholePage === \"function\") {\\n' +\n"
+            "                        '            window.__antigravity_translateWholePage();\\n' +\n"
+            "                        '        }\\n' +\n"
+            "                        '    } catch(e) {\\n' +\n"
+            "                        '        console.error(\"[Antigravity i18n Hot-Reload Error]\", e);\\n' +\n"
+            "                        '    }\\n' +\n"
+            "                        '})();';\n"
+            "                }\n"
+            "                const electron = require('electron');\n"
+            "                const allWcs = electron.webContents ? electron.webContents.getAllWebContents() : [];\n"
+            "                let broadcastCount = 0;\n"
+            "                allWcs.forEach(wc => {\n"
+            "                    try {\n"
+            "                        if (!wc || wc.isDestroyed()) return;\n"
+            "                        const url = wc.getURL ? wc.getURL() : '';\n"
+            "                        if (typeof url === 'string' && url.includes('swarm_board')) {\n"
+            "                            wc.reload();\n"
+            "                            broadcastCount++;\n"
+            "                            return;\n"
+            "                        }\n"
+            "                        if (typeof url === 'string' && url.startsWith('data:text/html') && url.includes('logo-pulse')) {\n"
+            "                            return;\n"
+            "                        }\n"
+            "                        wc.executeJavaScript(dispatchScript).catch(() => {});\n"
+            "                        broadcastCount++;\n"
+            "                    } catch(e) {}\n"
             "                });\n"
-            "                console.log('[Antigravity i18n] Hot-reload successfully broadcasted to ' + wins.length + ' windows.');\n"
+            "                console.log('[Antigravity i18n] Hot-reload successfully broadcasted to ' + broadcastCount + ' WebContents targets.');\n"
             "            } catch (err) {\n"
             "                if (attempt < 3) {\n"
-            "                    setTimeout(() => broadcastNewData(attempt + 1), 250);\n"
+            "                    setTimeout(() => broadcastNewData(attempt + 1), 200);\n"
             "                }\n"
             "            }\n"
             "        };\n"
-            "        if (_fs.existsSync(livePath)) {\n"
-            "            _fs.watchFile(livePath, { interval: 600 }, (curr, prev) => {\n"
-            "                if (curr.mtimeMs <= prev.mtimeMs) return;\n"
+            "        _fs.watch(resDir, (eventType, filename) => {\n"
+            "            if (!filename) return;\n"
+            "            const fn = filename.toString();\n"
+            "            if (fn === 'i18n_live.json' || fn === 'i18n_runner_live.js') {\n"
             "                if (_hotReloadDebounceTimer) clearTimeout(_hotReloadDebounceTimer);\n"
-            "                _hotReloadDebounceTimer = setTimeout(() => { broadcastNewData(1); }, 350);\n"
-            "            });\n"
-            "        }\n"
+            "                _hotReloadDebounceTimer = setTimeout(() => { broadcastNewData(1); }, 200);\n"
+            "            }\n"
+            "        });\n"
             "    } catch(e) {\n"
             "        console.error('[Antigravity i18n] setupLiveWatch error:', e);\n"
             "    }\n"
             "};\n"
             "setupLiveWatch();\n"
-            "let _menuDictCache = null;\n"
-            "let _menuDictMtime = 0;\n"
             "const translateContextMenuItems = (items) => {\n"
             "    try {\n"
             "        if (!Array.isArray(items)) return;\n"
-            "        const resDir = getPhysicalResourcesPath();\n"
-            "        const livePath = resDir ? _path.join(resDir, 'i18n_live.json') : '';\n"
-            "        const asarPath = _path.join(__dirname, 'i18n_data.json');\n"
-            "        let targetPath = asarPath;\n"
-            "        if (livePath && _fs.existsSync(livePath)) targetPath = livePath;\n"
-            "        if (!_fs.existsSync(targetPath)) return;\n"
-            "        const stat = _fs.statSync(targetPath);\n"
-            "        if (!_menuDictCache || _menuDictMtime !== stat.mtimeMs) {\n"
-            "            const dataStr = _fs.readFileSync(targetPath, 'utf-8');\n"
-            "            const dict = JSON.parse(dataStr);\n"
-            "            _menuDictCache = {\n"
-            "                exact: dict.exact || {},\n"
-            "                regexRules: (dict.regex_rules || []).map(r => ({\n"
-            "                    re: new RegExp(r.pattern),\n"
-            "                    rep: r.replacement\n"
-            "                }))\n"
-            "            };\n"
-            "            _menuDictMtime = stat.mtimeMs;\n"
-            "        }\n"
-            "        const exactMap = _menuDictCache.exact;\n"
-            "        const regexRules = _menuDictCache.regexRules;\n"
+            "        if (!_menuDictCache) refreshMenuDictCache();\n"
+            "        if (!_menuDictCache) return;\n"
+            "        const exactMap = _menuDictCache.exact || {};\n"
+            "        const regexRules = _menuDictCache.regexRules || [];\n"
             "        const translateOne = (str) => {\n"
             "            if (typeof str !== 'string' || !str.trim()) return str;\n"
             "            const trimmed = str.trim();\n"
@@ -710,19 +947,21 @@ def main():
             "};\n"
             "exports.translateContextMenuItems = translateContextMenuItems;\n"
             "exports.injectAntigravityI18n = injectAntigravityI18n;\n"
+            "exports.getMenuDict = getMenuDict;\n"
         )
 
         if "injectAntigravityI18n" in u_content:
             u_content = re.sub(
-                r"(?:const _fs = require\('fs'\);[\s\S]*?|let _cachedAntigravityI18nScript[\s\S]*?)exports\.injectAntigravityI18n = injectAntigravityI18n;\s*",
+                r"(?:const _fs = require\('fs'\);[\s\S]*?|let _cachedAntigravityI18nScript[\s\S]*?)exports\.getMenuDict = getMenuDict;\s*",
                 "",
                 u_content
             )
         u_content = inject_code_def + "\n" + u_content
 
+        # 严格幂等钩入，绝不重复叠加 hubContents.on 监听器
         needle_hub = "registerWindowWebContents(win, hubContents);"
         needle_old = "win.webContents.setWindowOpenHandler"
-        if needle_hub in u_content:
+        if needle_hub in u_content and "injectAntigravityI18n(hubContents)" not in u_content:
             hub_hook = (
                 "registerWindowWebContents(win, hubContents);\n"
                 "    hubContents.on('dom-ready', () => injectAntigravityI18n(hubContents));\n"
@@ -745,7 +984,7 @@ def main():
             u_content = u_content.replace(needle_old, old_hook, 1)
 
         show_needle = "wins[0].focus();"
-        if show_needle in u_content and "exports.injectAntigravityI18n" not in u_content:
+        if show_needle in u_content and "injectAntigravityI18n)(wins[0])" not in u_content:
             u_content = u_content.replace(
                 show_needle,
                 show_needle + "\n        if (exports.injectAntigravityI18n) { (0, exports.injectAntigravityI18n)(wins[0]); }",
@@ -756,12 +995,12 @@ def main():
             f.write(u_content)
         modified_files.append(utils_js)
 
-        # B. 注入 main.js (全局 web-contents-created 守卫)
+        # B. 注入 main.js (全局 web-contents-created 守卫，幂等注入)
         if os.path.exists(main_js):
             with open(main_js, "r", encoding="utf-8") as f:
                 m_content = f.read()
 
-            if "web-contents-created" not in m_content:
+            if "web-contents-created" not in m_content and "injectAntigravityI18n" not in m_content:
                 main_inject = (
                     "    // Register global WebContents i18n injection lifecycle hook\n"
                     "    electron_1.app.on('web-contents-created', (_event, wc) => {\n"
@@ -789,6 +1028,39 @@ def main():
                 sys.exit(1)
         print("[✓] Syntax checks passed 100%.")
 
+        # 5.1 验证实时渲染注入字符串语法 (Node vm.Script)
+        print("[*] Performing live injection script VM compilation check...")
+        test_script_path = os.path.join(tempfile.gettempdir(), "test_injection_vm_check.js")
+        test_check_code = """
+const fs = require('fs');
+const vm = require('vm');
+const dataStr = fs.readFileSync(process.argv[2], 'utf-8');
+const runnerCode = fs.readFileSync(process.argv[3], 'utf-8');
+const fullCode = '(function(){\\n' +
+    'var _i18n_data = ' + JSON.stringify(JSON.parse(dataStr)) + ';\\n' +
+    'window = {}; document = { addEventListener: () => {}, querySelectorAll: () => [] };\\n' +
+    runnerCode + '\\n' +
+'})();';
+try {
+    new vm.Script(fullCode);
+    console.log('[✓] Live injection script compiled successfully via vm.Script.');
+} catch (e) {
+    console.error('[Error] Live injection script syntax error:', e);
+    process.exit(1);
+}
+"""
+        with open(test_script_path, "w", encoding="utf-8") as f:
+            f.write(test_check_code)
+        vm_chk = subprocess.run(["node", test_script_path, i18n_data_src, i18n_runner_src], capture_output=True, text=True)
+        if vm_chk.returncode != 0:
+            print(f"[Error] Live injection syntax verification failed:\n{vm_chk.stderr}\n{vm_chk.stdout}")
+            sys.exit(1)
+        print("[✓] Live injection syntax checks passed 100%.")
+
+        if is_dry_run:
+            print("[*] [Dry-Run] 沙箱全流程模拟与语法门禁验证 100% 成功！")
+            return
+
         # 6. 打包新 asar
         temp_pack = os.path.join(tempfile.gettempdir(), "antigravity_new.asar")
         temp_unpacked = temp_pack + ".unpacked"
@@ -799,12 +1071,12 @@ def main():
 
         print("[*] Packaging modified files into asar...")
         subprocess.run(
-            f'{npx_bin} --yes @electron/asar pack "{work_dir}" "{temp_pack}" --unpack-dir "node_modules/chrome-devtools-mcp"',
+            f'{npx_bin} --yes @electron/asar pack "{extract_dir}" "{temp_pack}" --unpack-dir "node_modules/chrome-devtools-mcp"',
             shell=True,
             check=True
         )
 
-        # 7. 原子替换
+        # 7. 原子替换生产文件
         target_unpacked = target_asar + ".unpacked"
         if os.path.exists(temp_unpacked):
             if os.path.exists(target_unpacked):
@@ -814,21 +1086,23 @@ def main():
         shutil.copy2(temp_pack, target_asar)
         print("[✓] Production app.asar successfully updated!")
 
-        # 7.1 初始化外部物理热更新源 (resources/i18n_live.json)
+        # 7.1 初始化外部双物理热更新源 (resources/i18n_live.json & resources/i18n_runner_live.js)
         try:
             live_json = os.path.join(resources_dir, "i18n_live.json")
+            live_runner = os.path.join(resources_dir, "i18n_runner_live.js")
             shutil.copy2(i18n_data_src, live_json)
-            print(f"[✓] Live hot-reload dictionary initialized: {live_json}")
+            shutil.copy2(i18n_runner_src, live_runner)
+            print(f"[✓] Live hot-reload sources initialized: {live_json} & {live_runner}")
         except Exception as e:
-            print("[!] Warning initializing live json:", e)
+            print("[!] Warning initializing live sources:", e)
 
-        # 8. 尝试 CDP 实时全量热注入（覆盖所有 page 与 swarm 插件 iframe）
+        # 8. 触发 CDP 实时全量热注入（覆盖所有 page 与 swarm 插件 iframe）
         broadcast_cdp(script_dir)
 
         print("\n" + "=" * 60)
         print("  汉化部署成功！欢迎体验全中文版 Antigravity。")
-        print("  [✓] 外部物理热重载源 (resources/i18n_live.json) 已就绪！")
-        print("  [✓] 全量无感热刷新已生效：修改词库即可即时无感呈现。")
+        print("  [✓] 外部双物理热重载源 (i18n_live.json & i18n_runner_live.js) 已就绪！")
+        print("  [✓] 零重启免刷新全量热更新通道已生效：词库与执行逻辑改动秒级就地自愈！")
         print("=" * 60)
 
     finally:

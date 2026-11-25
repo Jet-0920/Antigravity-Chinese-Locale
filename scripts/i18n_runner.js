@@ -16,96 +16,161 @@
     var EXEMPTIONS = data.exemptions || [];
 
     // Always update global store on new data injection
-    window.__ANTIGRAVITY_EXACT__ = Object.assign(window.__ANTIGRAVITY_EXACT__ || {}, EXACT);
-    window.__ANTIGRAVITY_REVERSE_MAP__ = Object.assign(window.__ANTIGRAVITY_REVERSE_MAP__ || {}, REVERSE_MAP);
+    window.__ANTIGRAVITY_EXACT__ = EXACT;
+    window.__ANTIGRAVITY_REVERSE_MAP__ = REVERSE_MAP;
     window.__ANTIGRAVITY_REGEX_RULES__ = REGEX_RULES;
     window.__ANTIGRAVITY_EXEMPTIONS__ = EXEMPTIONS;
 
-    var RUNNER_VERSION = 3.4;
-    if (window.__antigravity_runner_version && window.__antigravity_runner_version >= RUNNER_VERSION) {
-        if (typeof window.__antigravity_reload_i18n === 'function') {
-            window.__antigravity_reload_i18n(data);
-        } else if (typeof window.__antigravity_translateWholePage === 'function') {
-            window.__antigravity_translateWholePage();
+    // Execute previous runner cleanup if registered (enables live script hot-reload without deadlocks)
+    if (typeof window.__antigravity_cleanup_i18n === 'function') {
+        try {
+            window.__antigravity_cleanup_i18n();
+        } catch (e) {
+            console.error("[Antigravity i18n] Error executing previous cleanup:", e);
         }
-        return;
     }
+
+    var RUNNER_VERSION = 4.0;
     window.__antigravity_runner_version = RUNNER_VERSION;
     window.__antigravity_i18n_runner_active = true;
 
-    // 1. Controlled Component Reverse Map Hook (Protects Base UI / Radix Select states)
+    // Track active resources for hot teardown and reload
+    var activeCleanups = [];
+
+    // 1. WeakMap Immutable Source Text & Attribute Stores
+    window.__ANTIGRAVITY_ORIG_TEXT_STORE__ = window.__ANTIGRAVITY_ORIG_TEXT_STORE__ || new WeakMap();
+    window.__ANTIGRAVITY_ORIG_ATTR_STORE__ = window.__ANTIGRAVITY_ORIG_ATTR_STORE__ || new WeakMap();
+
+    // 2. High-Performance Base UI / Radix Controlled Component Reverse Map Hook
     if (!window.__antigravity_map_hooked) {
         window.__antigravity_map_hooked = true;
         var origHas = Map.prototype.has;
         var origGet = Map.prototype.get;
+        var zhCharRegex = /[\u4e00-\u9fa5]/;
 
         Map.prototype.has = function (key) {
             if (origHas.call(this, key)) return true;
+            // 快路径：非字符串或不含汉字直接返回 false，保证 99.9% 内部英文/代码 Map 查询零损耗
+            if (typeof key !== "string" || !zhCharRegex.test(key)) return false;
+
             var rev = window.__ANTIGRAVITY_REVERSE_MAP__ || REVERSE_MAP;
-            if (typeof key === "string" && rev[key]) {
-                return origHas.call(this, rev[key]);
+            var cand = rev[key];
+            if (cand) {
+                if (Array.isArray(cand)) {
+                    for (var i = 0; i < cand.length; i++) {
+                        if (origHas.call(this, cand[i])) return true;
+                    }
+                } else if (typeof cand === "string") {
+                    if (origHas.call(this, cand)) return true;
+                }
             }
             return false;
         };
 
         Map.prototype.get = function (key) {
-            var val = origGet.call(this, key);
-            if (val !== undefined) return val;
+            // 严守 JS 规范：若原生 Map 存有该 key（即使值为 undefined），优先返回原生值
+            if (origHas.call(this, key)) {
+                return origGet.call(this, key);
+            }
+            // 快路径拦截
+            if (typeof key !== "string" || !zhCharRegex.test(key)) {
+                return undefined;
+            }
+
             var rev = window.__ANTIGRAVITY_REVERSE_MAP__ || REVERSE_MAP;
-            if (typeof key === "string" && rev[key]) {
-                return origGet.call(this, rev[key]);
+            var cand = rev[key];
+            if (cand) {
+                if (Array.isArray(cand)) {
+                    for (var i = 0; i < cand.length; i++) {
+                        if (origHas.call(this, cand[i])) {
+                            return origGet.call(this, cand[i]);
+                        }
+                    }
+                } else if (typeof cand === "string") {
+                    if (origHas.call(this, cand)) {
+                        return origGet.call(this, cand);
+                    }
+                }
             }
             return undefined;
         };
     }
 
-    // 2. Isolation & Exemption Checks
+    // 3. Strict Layered Exclusion & Isolation Engine
     var EXCLUDED_TAGS = {
         "SCRIPT": true,
         "STYLE": true,
-        "PRE": true,
         "CODE": true,
-        "TEXTAREA": true
+        "PRE": true,
+        "TEXTAREA": true,
+        "INPUT": true,
+        "KBD": true
     };
 
     function isInsideExcluded(node) {
-        var curr = node;
+        if (!node) return false;
+        var curr = node.nodeType === 3 ? node.parentNode : node;
         while (curr && curr !== document.body && curr !== document.documentElement) {
             if (curr.nodeType === 1) {
                 var tag = curr.tagName;
-                // 若当前节点或其父级是按钮、快捷键标签或明确的 UI 控制控件，绝不排除
-                if (tag === "BUTTON" || tag === "KBD" || (curr.getAttribute && (
+                var cls = curr.className;
+                var clsStr = typeof cls === "string" ? cls : "";
+
+                // 第一优先级（绝对物理禁区，只要向上碰到任意一个即立刻 return true 阻断，不可绕过）：
+                if (EXCLUDED_TAGS[tag]) return true;
+                if (curr.isContentEditable) return true;
+                if (clsStr && (
+                    clsStr.indexOf("view-line") !== -1 ||
+                    clsStr.indexOf("view-lines") !== -1 ||
+                    clsStr.indexOf("lines-content") !== -1 ||
+                    clsStr.indexOf("overflow-guard") !== -1 ||
+                    clsStr.indexOf("mtk") !== -1 ||
+                    clsStr.indexOf("xterm") !== -1 ||
+                    clsStr.indexOf("terminal") !== -1 ||
+                    clsStr.indexOf("token") !== -1 ||
+                    clsStr.indexOf("syntax") !== -1
+                )) {
+                    return true;
+                }
+
+                // 第二优先级（安全 UI 控件放行，此时已确保不在代码行/输入框内）：
+                var isUiControl = false;
+                if (tag === "BUTTON" || (typeof curr.getAttribute === "function" && (
                     curr.getAttribute("role") === "button" ||
                     curr.getAttribute("role") === "menuitem" ||
                     curr.getAttribute("role") === "tooltip" ||
                     curr.getAttribute("role") === "menu" ||
-                    curr.getAttribute("role") === "tab"
+                    curr.getAttribute("role") === "tab" ||
+                    curr.getAttribute("role") === "option"
                 ))) {
-                    return false;
-                }
-                var cls = curr.className;
-                if (typeof cls === "string" && (
-                    cls.indexOf("copy") !== -1 ||
-                    cls.indexOf("overlay") !== -1 ||
-                    cls.indexOf("popup") !== -1 ||
-                    cls.indexOf("tooltip") !== -1 ||
-                    cls.indexOf("badge") !== -1 ||
-                    cls.indexOf("action") !== -1 ||
-                    cls.indexOf("comment") !== -1 ||
-                    cls.indexOf("quote") !== -1 ||
-                    cls.indexOf("menu") !== -1 ||
-                    cls.indexOf("viewing-diff") !== -1 ||
-                    cls.indexOf("zone-widget") !== -1 ||
-                    cls.indexOf("monaco-hover") !== -1
+                    isUiControl = true;
+                } else if (clsStr && (
+                    clsStr.indexOf("monaco-hover") !== -1 ||
+                    clsStr.indexOf("overlayWidgets") !== -1 ||
+                    clsStr.indexOf("agy-overlay") !== -1 ||
+                    clsStr.indexOf("viewing-diff-badge") !== -1 ||
+                    clsStr.indexOf("viewing-diff-title") !== -1 ||
+                    clsStr.indexOf("copy-code-button") !== -1
                 )) {
+                    isUiControl = true;
+                } else if (typeof curr.getAttribute === "function" && curr.getAttribute("data-testid") === "context-menu-popup") {
+                    isUiControl = true;
+                } else if (typeof curr.hasAttribute === "function" && (
+                    curr.hasAttribute("data-radix-popper-content-wrapper") ||
+                    curr.hasAttribute("data-floating-ui-portal")
+                )) {
+                    isUiControl = true;
+                }
+
+                if (isUiControl) {
                     return false;
                 }
-                if (EXCLUDED_TAGS[tag]) return true;
-                if (curr.isContentEditable) return true;
-                if (typeof cls === "string" && (
-                    cls.indexOf("monaco-editor") !== -1 ||
-                    cls.indexOf("token") !== -1 ||
-                    cls.indexOf("syntax") !== -1
+
+                // 第三优先级（外层编辑区兜底阻断）：
+                if (clsStr && (
+                    clsStr.indexOf("monaco-editor") !== -1 ||
+                    clsStr.indexOf("monaco-diff-editor") !== -1 ||
+                    clsStr.indexOf("chat-code-block") !== -1
                 )) {
                     return true;
                 }
@@ -115,8 +180,126 @@
         return false;
     }
 
+    // 4. Technical Entity & Code Identifier Protection Gatekeeper
+    function isTechnicalEntity(text) {
+        if (!text || text.length > 250) return false;
+        // URL
+        if (/[a-zA-Z]+:\/\/[^\s]+/.test(text)) return true;
+        // Local file system path (Windows drive letter or Unix absolute path)
+        if (/^[A-Za-z]:[\\\/]/.test(text) || /^\/[a-zA-Z0-9_\-\.]+\/[a-zA-Z0-9_\-\.]+/.test(text)) return true;
+        // Common code / config file names with extensions
+        if (/^[a-zA-Z0-9_\-\.\/\\]+\.(py|js|ts|tsx|jsx|json|ya?ml|md|sh|ps1|sql|html?|css|rs|go|cpp?|c|h|txt|log|lock|toml|env|gitignore)$/i.test(text)) return true;
+        // Semantic versioning (e.g. v1.2.3, 2.0.0-beta)
+        if (/^v?\d+\.\d+(\.\d+)?(-[a-zA-Z0-9\.]+)?$/i.test(text)) return true;
+        // CLI commands and arguments
+        if (/^(git|npm|npx|docker|python3?|node|yarn|pnpm|cargo|go|kubectl|agy)\s+[a-zA-Z0-9\-_]/i.test(text)) return true;
+        // Code identifiers (snake_case with 2+ parts or camelCase)
+        if (/^[a-zA-Z0-9]+_[a-zA-Z0-9_]+$/.test(text) || /^[a-z]+[A-Z][a-zA-Z0-9]*$/.test(text)) return true;
+        return false;
+    }
+
+    // 5. Prose Flow & UI Control Context Gatekeepers
+    function isInsideProseFlow(node) {
+        if (!node) return false;
+        var curr = node.nodeType === 3 ? node.parentNode : node;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+            if (curr.nodeType === 1) {
+                var tag = curr.tagName;
+                // If explicitly an interactive button or toolbar widget inside prose, treat as UI control
+                if (tag === "BUTTON" || tag === "NAV") return false;
+                if (typeof curr.getAttribute === "function") {
+                    var role = curr.getAttribute("role");
+                    if (role === "button" || role === "tooltip" || role === "tab" || role === "menuitem") {
+                        return false;
+                    }
+                }
+                var cls = curr.className;
+                var clsStr = typeof cls === "string" ? cls : "";
+                if (clsStr && (
+                    clsStr.indexOf("copy-code-button") !== -1 ||
+                    clsStr.indexOf("monaco-hover") !== -1 ||
+                    clsStr.indexOf("badge") !== -1
+                )) {
+                    return false;
+                }
+
+                // If inside prose containers or chat message text
+                if (tag === "ARTICLE" || (clsStr && (
+                    clsStr.indexOf("markdown-body") !== -1 ||
+                    clsStr.indexOf("prose") !== -1 ||
+                    clsStr.indexOf("chat-message-content") !== -1 ||
+                    clsStr.indexOf("conversation-turn") !== -1
+                )) || (typeof curr.hasAttribute === "function" && curr.hasAttribute("data-message-id"))) {
+                    return true;
+                }
+            }
+            curr = curr.parentNode;
+        }
+        return false;
+    }
+
+    function isInUIControlContext(node) {
+        if (!node) return true; // Native menus or headless calls without DOM context default to allowed
+        var curr = node.nodeType === 3 ? node.parentNode : node;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+            if (curr.nodeType === 1) {
+                var tag = curr.tagName;
+                var cls = curr.className;
+                var clsStr = typeof cls === "string" ? cls : "";
+
+                // Message body prose containers: block single-word translation unless directly in a button
+                if (clsStr && (
+                    clsStr.indexOf("markdown-body") !== -1 ||
+                    clsStr.indexOf("prose") !== -1 ||
+                    clsStr.indexOf("chat-message-content") !== -1 ||
+                    clsStr.indexOf("conversation-turn") !== -1
+                )) {
+                    if (tag === "BUTTON" || (typeof curr.getAttribute === "function" && curr.getAttribute("role") === "button")) {
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (tag === "BUTTON" || tag === "NAV" || tag === "LABEL" || tag === "LEGEND") {
+                    return true;
+                }
+                if (typeof curr.getAttribute === "function") {
+                    var role = curr.getAttribute("role");
+                    if (role === "button" || role === "menuitem" || role === "menu" || role === "tab" ||
+                        role === "tooltip" || role === "switch" || role === "status" || role === "option" ||
+                        role === "dialog" || role === "navigation") {
+                        return true;
+                    }
+                }
+                if (clsStr && (
+                    clsStr.indexOf("tooltip") !== -1 ||
+                    clsStr.indexOf("menu") !== -1 ||
+                    clsStr.indexOf("badge") !== -1 ||
+                    clsStr.indexOf("setting") !== -1 ||
+                    clsStr.indexOf("dialog") !== -1 ||
+                    clsStr.indexOf("modal") !== -1 ||
+                    clsStr.indexOf("header") !== -1 ||
+                    clsStr.indexOf("sidebar") !== -1 ||
+                    clsStr.indexOf("toolbar") !== -1 ||
+                    clsStr.indexOf("status-bar") !== -1 ||
+                    clsStr.indexOf("nav") !== -1
+                )) {
+                    return true;
+                }
+            }
+            curr = curr.parentNode;
+        }
+        return false;
+    }
+
+    var HIGH_AMBIGUITY_SINGLE_WORDS = {
+        "width": true, "height": true, "file": true, "changes": true,
+        "open": true, "close": true, "default": true, "run": true, "new": true
+    };
+
     function isExempt(text) {
         var exemptions = window.__ANTIGRAVITY_EXEMPTIONS__ || EXEMPTIONS;
+        if (!Array.isArray(exemptions) || exemptions.length === 0) return false;
         for (var i = 0; i < exemptions.length; i++) {
             if (text.indexOf(exemptions[i]) !== -1) {
                 return true;
@@ -125,7 +308,7 @@
         return false;
     }
 
-    // 辅助格式化英文动态时长
+    // 格式化英文动态时长
     function formatDuration(dur) {
         if (!dur) return "";
         return dur
@@ -144,107 +327,17 @@
             .trim();
     }
 
-    // F. 侧边栏与高频开发场景智能短语自动汉化引擎 (Phrase Auto-Translator)
-    var SIDEBAR_VOCAB = {
-        review: "审查", check: "检查", setup: "配置", initialize: "初始化", init: "初始化",
-        create: "创建", build: "构建", generate: "生成", make: "制作", debug: "调试",
-        debugging: "调试", fix: "修复", resolve: "解决", analyze: "分析", analysis: "分析",
-        explore: "探索", exploration: "探索", optimize: "优化", optimization: "优化",
-        refactor: "重构", refactoring: "重构", test: "测试", testing: "测试",
-        deploy: "部署", deployment: "部署", update: "更新", upgrade: "升级",
-        install: "安装", installation: "安装", configure: "配置", configuration: "配置",
-        migrate: "迁移", migration: "迁移", study: "学习", learn: "学习",
-        guide: "指南", tutorial: "教程", inquire: "咨询", inquiry: "咨询",
-        consult: "咨询", consultation: "咨询", summarize: "总结", summary: "总结",
-        prepare: "准备", preparation: "准备", replicate: "复现", replication: "复现",
-        sunset: "下线", farewell: "致别", folder: "文件夹", directory: "目录",
-        contents: "内容", content: "内容", file: "文件", files: "文件",
-        document: "文档", documents: "文档", doc: "文档", docs: "文档",
-        code: "代码", codebase: "代码库", repo: "仓库", repository: "仓库",
-        assistant: "助手", agent: "智能体", bot: "机器人", model: "模型",
-        prompt: "提示词", context: "上下文", project: "项目", task: "任务",
-        tasks: "任务", workflow: "工作流", error: "错误", errors: "错误",
-        bug: "缺陷", bugs: "缺陷", issue: "问题", issues: "问题",
-        restriction: "限制", location: "区域", region: "区域", network: "网络",
-        paper: "论文", ppt: "PPT", slide: "幻灯片", slides: "幻灯片",
-        course: "课程", homework: "作业", exam: "考试", database: "数据库",
-        server: "服务端", client: "客户端", management: "管理", script: "脚本",
-        production: "生产环境", memory: "内存", leak: "泄漏", data: "数据",
-        state: "状态", bayesian: "贝叶斯", claude: "Claude", gemini: "Gemini",
-        docker: "Docker", compose: "Compose", react: "React", vue: "Vue",
-        python: "Python", node: "Node", git: "Git", github: "GitHub",
-        api: "API", sdk: "SDK", cli: "CLI", ui: "UI",
-        in: "在", and: "与", for: "的", with: "带", to: "到",
-        now: "刚刚", today: "今天", yesterday: "昨天",
-        checkout: "检出", worktree: "工作树", verbose: "详细",
-        connector: "连接器", connectors: "连接器", voice: "音色", speed: "语速",
-        steps: "步骤", step: "步骤", history: "历史", audit: "审查",
-        subagent: "子智能体", subagents: "子智能体", workspace: "工作区",
-        tool: "工具", tools: "工具", rule: "规则", rules: "规则",
-        skill: "技能", skills: "技能", plugin: "插件", plugins: "插件",
-        conversation: "会话", conversations: "会话", sort: "排序",
-        group: "分组", filter: "筛选", sidebar: "侧边栏", pane: "面板",
-        archive: "归档", unarchive: "取消归档", settings: "设置", setting: "设置",
-        name: "名称", copy: "复制", rename: "重命名", pin: "置顶", unpin: "取消置顶",
-        duplicate: "副本", path: "路径",
-        quote: "引用", delete: "删除", edit: "编辑", title: "标题", titles: "标题",
-        downloads: "下载", download: "下载", screenshot: "截图", external: "外部",
-        forward: "前进", reload: "刷新", certificate: "证书", secure: "安全",
-        stop: "停止", execution: "执行", record: "录制", audio: "音频",
-        finishes: "完成", finish: "完成", working: "工作", queue: "排队", queued: "排队",
-        pattern: "规则", deny: "禁止", allow: "允许", urls: "URL",
-        trigger: "触发条件", scheduled: "定时计划", untitled: "未命名", instructions: "指令",
-        budget: "预算", exceeded: "超出", breakdown: "明细", pointer: "指针",
-        marketplace: "插件市场", publisher: "发布者", partner: "伙伴", official: "官方",
-        overview: "概览", features: "特性", changelog: "日志", license: "许可",
-        automatic: "自动", updates: "更新", browse: "浏览", browsing: "浏览",
-        notification: "通知", notifications: "通知", sound: "提示音", sounds: "提示音",
-        width: "宽度", height: "高度", effort: "深度"
-    };
-
-    function autoTranslateTitle(str, node) {
-        if (!str || str.length < 3 || str.length > 70) return null;
-        if (/[\u4e00-\u9fa5]/.test(str)) return null;
-
-        var lowerStr = str.trim().toLowerCase();
-        if (lowerStr === "voice speed") {
-            return "语速";
-        }
-
-        var words = str.trim().split(/[\s_-]+/);
-        if (words.length < 2 || words.length > 8) return null;
-
-        var translatedParts = [];
-        var matchedCount = 0;
-
-        for (var i = 0; i < words.length; i++) {
-            var raw = words[i];
-            var lower = raw.toLowerCase();
-            if (SIDEBAR_VOCAB[lower]) {
-                translatedParts.push(SIDEBAR_VOCAB[lower]);
-                matchedCount++;
-            } else if (/^[A-Z0-9]+$/.test(raw)) {
-                translatedParts.push(raw);
-                matchedCount++;
-            } else {
-                translatedParts.push(raw);
-            }
-        }
-
-        if (matchedCount / words.length >= 0.5) {
-            return translatedParts.join(" ")
-                .replace(/(\b[a-zA-Z0-9]+)\s+([\u4e00-\u9fa5])/g, "$1 $2")
-                .replace(/([\u4e00-\u9fa5])\s+([\u4e00-\u9fa5])/g, "$1$2")
-                .replace(/([\u4e00-\u9fa5])\s+([a-zA-Z0-9]+\b)/g, "$1 $2");
-        }
-
-        return null;
-    }
-
+    // 6. Core Translation Resolver Engine
     function getTranslatedText(original, contextNode) {
+        if (!original || typeof original !== "string") return null;
         var trimmed = original.trim();
         if (!trimmed) return null;
         if (isExempt(original)) return null;
+
+        // 技术实体直接拦截，保护文件名、路径、CLI 命令与变量
+        if (isTechnicalEntity(trimmed)) {
+            return null;
+        }
 
         var lead = original.match(/^\s*/)[0];
         var trail = original.match(/\s*$/)[0];
@@ -272,7 +365,7 @@
             return lead + "用量" + trail;
         }
 
-        // B. 动态滑动窗口与额度刷新文案智能匹配
+        // B. 动态滑动窗口与额度刷新文案匹配
         var mWeekly = trimmed.match(/^You have used some of your weekly limit, it will fully refresh in (.+?)\.?$/i);
         if (mWeekly) {
             return lead + "您已消耗了部分本周额度，将在 " + formatDuration(mWeekly[1]) + " 后完全刷新。" + trail;
@@ -290,7 +383,7 @@
             return lead + "您已达到 5 小时滑动窗口额度上限，将在 " + formatDuration(mReach5h[1]) + " 后完全刷新。" + trail;
         }
 
-        // C. 动态剩余百分比与重置时间 (支持独立节点与组合节点)
+        // C. 动态剩余百分比与重置时间
         if (trimmed === "% left" || trimmed === "%left") {
             return lead + "% 剩余" + trail;
         }
@@ -315,7 +408,7 @@
             return lead + formatDuration(mResetGen[1]) + "后重置" + trail;
         }
 
-        // C2. 相对时间智能识别 (支持 19m ago, 2h ago, 5s ago, 19m, just now 等全量变体)
+        // C2. 相对时间识别 (如 19m ago, 2h ago, 5s ago, just now 等)
         if (trimmed === "now" || trimmed === "just now") {
             return lead + "刚刚" + trail;
         }
@@ -339,7 +432,7 @@
             }
         }
 
-        // C3. 语音对话状态与提示词正则拦截 (Started voice chat · 15:42 等)
+        // C3. 语音对话状态与提示词拦截 (严谨区分 Started / Stopped / Ended)
         var mVoiceChat = trimmed.match(/^(Started|Stopped|Ended)\s+voice\s+chat(?:\s*([·\.\u00b7\-–—])\s*(.+))?$/i);
         if (mVoiceChat) {
             var act = mVoiceChat[1].toLowerCase();
@@ -349,13 +442,13 @@
             return lead + actZh + timePart + trail;
         }
 
-        // C4. 语速浮层与气泡正则拦截 (Voice speed, 1x / Voice speed 1.5x)
+        // C4. 语速浮层与气泡拦截
         var mVoiceSpeedX = trimmed.match(/^Voice\s+speed,?\s*([\d\.]+)x$/i);
         if (mVoiceSpeedX) {
             return lead + "语速：" + mVoiceSpeedX[1] + "x" + trail;
         }
 
-        // C5. 麦克风与快捷键气泡正则拦截 (Mute mic (Alt+M) / Unmute mic (Alt+M))
+        // C5. 麦克风与快捷键气泡拦截
         var mMuteWithKey = trimmed.match(/^(Mute|Unmute)\s+mic(?:\s*(\([^)]+\)))?$/i);
         if (mMuteWithKey) {
             var isMute = mMuteWithKey[1].toLowerCase() === "mute";
@@ -364,7 +457,7 @@
             return lead + mZh + keyPart + trail;
         }
 
-        // C6. 带图标符号的前置操作按钮 (如 ✕ End, × End 等)
+        // C6. 带图标符号的前置操作按钮 (✕ End, × End 等)
         var mIconAction = trimmed.match(/^([✕×x\u2715\u00d7]\s*)(End|Stop|Cancel|Close)$/i);
         if (mIconAction) {
             var actionLower = mIconAction[2].toLowerCase();
@@ -372,12 +465,7 @@
             return lead + mIconAction[1] + actionZh + trail;
         }
 
-        // C7. 语音面板组合词自愈 (如 音色 speed -> 音色 语速)
-        if (/^音色\s+speed$/i.test(trimmed)) {
-            return lead + "音色 语速" + trail;
-        }
-
-        // C8. 编辑状态括号标注正则 ( (all agent edits) 等)
+        // C8. 编辑状态括号标注正则
         var mEdits = trimmed.match(/^(.+?)\s*\((all\s+agent\s+edits|all\s+edits|agent\s+edits|user\s+edits)\)$/i);
         if (mEdits) {
             var prefix = mEdits[1];
@@ -387,80 +475,81 @@
             return lead + tPrefix + " " + editZh + trail;
         }
 
-        // C10. 半汉化自愈 (如 "下载 File" -> "下载文件", "Automatic 检查的 updates" -> "自动检查更新")
-        if (/^下载\s+file$/i.test(trimmed)) {
-            return lead + "下载文件" + trail;
-        }
-        if (/^Automatic\s+检查的\s+updates$/i.test(trimmed) || /^Automatic\s+update\s+checks?$/i.test(trimmed) || /^Automatic\s+check\s+for\s+updates?$/i.test(trimmed)) {
-            return lead + "自动检查更新" + trail;
-        }
-        if (/^Enable\s+notifications\s+的智能体$/i.test(trimmed) || /^Enable\s+notifications?\s+for\s+agents?$/i.test(trimmed)) {
-            return lead + "允许智能体发送通知" + trail;
-        }
-        if (/^Enable\s+sounds\s+的智能体$/i.test(trimmed) || /^Enable\s+sounds?\s+for\s+agents?$/i.test(trimmed)) {
-            return lead + "允许智能体播放提示音" + trail;
-        }
-        if (/^下载\s+location$/i.test(trimmed)) {
-            return lead + "下载保存位置" + trail;
-        }
-        if (/^Browsing\s+历史$/i.test(trimmed)) {
-            return lead + "浏览历史记录" + trail;
-        }
-        if (/^会话\s+width$/i.test(trimmed)) {
-            return lead + "会话宽度" + trail;
-        }
-
-        // C11. 订阅与方案动态前缀正则 (如 Your plan: Google AI 专业版 -> 当前方案：Google AI 专业版)
-        var mPlan = trimmed.match(/^Your\s+plan:\s*(.+)$/i);
-        if (mPlan) {
-            var pName = mPlan[1];
-            var tPName = getTranslatedText(pName, contextNode) || pName;
+        // C11. 方案名称精准拦截 (收紧长度与字符集，杜绝误伤包含谓词的英文聊天长句)
+        var mPlan = trimmed.match(/^Your\s+plan:\s*([A-Za-z0-9\s\+\-\.]+?)$/i);
+        if (mPlan && mPlan[1].length <= 35 && !/\b(failed|refactor|database|error|bug|issue|task)\b/i.test(mPlan[1])) {
+            var pName = mPlan[1].trim();
+            var exactMapQuick = window.__ANTIGRAVITY_EXACT__ || EXACT;
+            var tPName = exactMapQuick[pName] || pName;
             return lead + "当前方案：" + tPName + trail;
         }
 
-        // C12. 运行状态禁用提示正则 (如 Model/Permissions cannot be changed while the agent is running)
-        var mCannotChange = trimmed.match(/^(.+?)\s+cannot\s+be\s+changed\s+while\s+(?:the\s+)?agent\s+is\s+running\.?$/i);
+        // C12. 运行状态禁用提示正则 (严格限制受控词集)
+        var mCannotChange = trimmed.match(/^(Model|Permissions?|Workspace|Settings?)\s+cannot\s+be\s+changed\s+while\s+(?:the\s+)?agent\s+is\s+running\.?$/i);
         if (mCannotChange) {
             var subject = mCannotChange[1];
-            var tSubject = getTranslatedText(subject, contextNode) || subject;
-            if (/^Model$/i.test(subject)) tSubject = "模型";
-            else if (/^Permissions?$/i.test(subject)) tSubject = "权限设置";
+            var tSubject = /^Model$/i.test(subject) ? "模型" : (/^Permissions?$/i.test(subject) ? "权限设置" : (/^Workspace$/i.test(subject) ? "工作区" : "设置"));
             return lead + "智能体运行过程中无法更改" + tSubject + trail;
         }
 
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
-        // D. 精确查表 (绝对最高优先级，避免复合词被后续正则截胡)
+        // 单英文单词闸门与正文流隔离检测
+        var isSingleWord = (trimmed.indexOf(" ") === -1 && trimmed.indexOf("\t") === -1 && trimmed.indexOf("\n") === -1);
+        var isIsolatedStateWord = /^(Working\.\.\.|Analyzed|Thinking\.\.\.|Live|Active|Waiting|Killed|Retired|Done|Blocked|Stuck|Running|Paused|Moving|Connecting|Connected|Offline|Online)$/i.test(trimmed);
+
+        var inProse = contextNode !== null && isInsideProseFlow(contextNode);
+
+        // 策略1：若处于普通正文流中，绝不翻译任何纯单字（除非明确孤立状态词）
+        if (inProse && isSingleWord && !isIsolatedStateWord) {
+            return null;
+        }
+
+        // D. 精确查表
         if (exactMap[trimmed] !== undefined) {
+            // 若为高歧义参数单字 (width, height, file, changes, open, close, default, run, new)，在正文流外仍须处于 UI 控制上下文
+            if (isSingleWord && !isIsolatedStateWord) {
+                var lowerWord = trimmed.toLowerCase();
+                if (HIGH_AMBIGUITY_SINGLE_WORDS[lowerWord]) {
+                    if (contextNode !== null && !isInUIControlContext(contextNode)) {
+                        return null;
+                    }
+                }
+            }
             return lead + exactMap[trimmed] + trail;
         }
 
-        // D2. 空白折叠规范化查表 (处理长句子、换行 \n 或连续空格段落)
+        // D2. 空白折叠规范化查表 (针对长文案或换行)
         var collapsed = trimmed.replace(/\s+/g, " ");
         if (exactMap[collapsed] !== undefined) {
             return lead + exactMap[collapsed] + trail;
         }
 
-        // D3. 小写自愈查表
-        var lowerKey = trimmed.toLowerCase();
-        if (exactMap[lowerKey] !== undefined) {
-            return lead + exactMap[lowerKey] + trail;
-        }
-        var lowerCollapsed = collapsed.toLowerCase();
-        if (exactMap[lowerCollapsed] !== undefined) {
-            return lead + exactMap[lowerCollapsed] + trail;
+        // D3. 小写自愈查表 (仅在正文流外部且处于 UI 控制上下文或原生菜单放行)
+        if (!inProse && (contextNode === null || isInUIControlContext(contextNode))) {
+            var lowerKey = trimmed.toLowerCase();
+            if (exactMap[lowerKey] !== undefined) {
+                return lead + exactMap[lowerKey] + trail;
+            }
+            var lowerCollapsed = collapsed.toLowerCase();
+            if (exactMap[lowerCollapsed] !== undefined) {
+                return lead + exactMap[lowerCollapsed] + trail;
+            }
         }
 
-        // D4. 快捷键浮动操作按钮正则 (仅匹配单键或组合键如 Comment C / Quote Ctrl+L，绝不误伤普通词组)
+        // D4. 快捷键浮动操作按钮正则 (仅匹配单键或组合键如 Comment C / Quote Ctrl+L)
         var mActKey = trimmed.match(/^(Comment|Quote|Copy|Edit)\s+([A-Z0-9]|Ctrl\+[A-Za-z0-9]|Cmd\+[A-Za-z0-9]|Alt\+[A-Za-z0-9]|Shift\+[A-Za-z0-9])$/i);
         if (mActKey) {
-            var act = mActKey[1].toLowerCase();
-            var actZh = act === "comment" ? "评论" : (act === "quote" ? "引用" : (act === "copy" ? "复制" : "编辑"));
-            return lead + actZh + " " + mActKey[2] + trail;
+            var actKeyLower = mActKey[1].toLowerCase();
+            var actZhKey = actKeyLower === "comment" ? "评论" : (actKeyLower === "quote" ? "引用" : (actKeyLower === "copy" ? "复制" : "编辑"));
+            return lead + actZhKey + " " + mActKey[2] + trail;
         }
 
-        // E. 正则规则匹配
+        // E. 正则规则匹配 (长于 250 字符且不在 UI 控件内的长文直接跳过，保护 CPU)
+        if (trimmed.length > 250 && !isInUIControlContext(contextNode)) {
+            return null;
+        }
         for (var i = 0; i < regexList.length; i++) {
             if (regexList[i].re.test(trimmed)) {
                 var replaced = trimmed.replace(regexList[i].re, regexList[i].rep);
@@ -468,215 +557,98 @@
             }
         }
 
-        // F. 启发式英文短语与会话标题兜底汉化
-        var autoTitle = autoTranslateTitle(trimmed, contextNode);
-        if (autoTitle !== null) {
-            return lead + autoTitle + trail;
-        }
-
         return null;
     }
 
-    // 2.8 原生系统上下文菜单深度拦截 Hook (Native Context Menu Hook)
-    function translateNativeItems(items) {
-        if (!Array.isArray(items)) return;
-        for (var i = 0; i < items.length; i++) {
-            var it = items[i];
-            if (!it) continue;
-            if (typeof it.label === "string" && it.label) {
-                var translated = getTranslatedText(it.label, null);
-                if (translated) {
-                    it.label = translated;
-                }
-            }
-            if (Array.isArray(it.submenu)) {
-                translateNativeItems(it.submenu);
-            }
-        }
-    }
-
-    function hookElectronNativeContextMenu() {
-        try {
-            if (window.electronNative && typeof window.electronNative.showContextMenu === "function" && !window.electronNative.__i18n_hooked) {
-                window.electronNative.__i18n_hooked = true;
-                var origShow = window.electronNative.showContextMenu;
-                window.electronNative.showContextMenu = function (items) {
-                    try {
-                        if (Array.isArray(items)) {
-                            translateNativeItems(items);
-                        }
-                    } catch (e) {
-                        console.error("[Antigravity i18n] Error translating context menu items:", e);
-                    }
-                    return origShow.apply(this, arguments);
-                };
-                return true;
-            }
-        } catch (e) {}
-        return false;
-    }
-    hookElectronNativeContextMenu();
-    // 渲染层多阶段重试挂载 (0ms, 60ms, 200ms, 600ms, 1500ms) 确保在 contextBridge 或异步准备完成时 100% 挂载
-    var nativeHookDelays = [60, 200, 600, 1500];
-    for (var nhd = 0; nhd < nativeHookDelays.length; nhd++) {
-        setTimeout(hookElectronNativeContextMenu, nativeHookDelays[nhd]);
-    }
-
-    // 3. Node Translation Engine
+    // 7. Text Node & Attribute Translation with Dual-Tracking WeakMap Snapshot
     function translateTextNode(textNode) {
         if (!textNode || textNode.nodeType !== 3) return;
-        var val = textNode.nodeValue;
-        if (!val || !val.trim()) return;
+        var currentVal = textNode.nodeValue;
+        if (!currentVal || !currentVal.trim()) return;
 
         if (isInsideExcluded(textNode)) return;
 
-        var translated = getTranslatedText(val, textNode);
-        if (translated !== null && translated !== val) {
-            textNode.nodeValue = translated;
+        var origStore = window.__ANTIGRAVITY_ORIG_TEXT_STORE__;
+        var rec = origStore.get(textNode);
+        if (!rec) {
+            rec = { orig: currentVal, lastZh: "" };
+            origStore.set(textNode, rec);
+        } else {
+            // React 就地复用更新检查：当 DOM 文本既不是已翻译的中文，也不是初始英文时，更新为新英文
+            if (currentVal !== rec.lastZh && currentVal !== rec.orig) {
+                rec.orig = currentVal;
+                rec.lastZh = "";
+            }
+        }
+
+        var translated = getTranslatedText(rec.orig, textNode);
+        if (translated !== null) {
+            if (currentVal !== translated) {
+                textNode.nodeValue = translated;
+            }
+            rec.lastZh = translated;
+        } else if (rec.lastZh && currentVal === rec.lastZh) {
+            // 热重载无损自愈：若新规则不再翻译该项，恢复无损原始英文
+            textNode.nodeValue = rec.orig;
+            rec.lastZh = "";
         }
     }
+
+    var ATTRS_TO_TRANSLATE = [
+        "placeholder",
+        "data-placeholder",
+        "title",
+        "aria-label",
+        "aria-description",
+        "data-tooltip-content",
+        "data-tooltip",
+        "data-title"
+    ];
 
     function translateElementAttributes(el) {
-        if (!el || el.nodeType !== 1) return;
+        if (!el || el.nodeType !== 1 || typeof el.getAttribute !== "function") return;
         var tag = el.tagName;
         if (tag === "SCRIPT" || tag === "STYLE") return;
+        if (isInsideExcluded(el)) return;
 
-        // placeholder (包括 textarea 和 input)
-        if (el.hasAttribute("placeholder")) {
-            var ph = el.getAttribute("placeholder");
-            var tPh = getTranslatedText(ph, el);
-            if (tPh !== null && tPh !== ph) el.setAttribute("placeholder", tPh);
+        var origAttrStore = window.__ANTIGRAVITY_ORIG_ATTR_STORE__;
+        var elAttrStore = origAttrStore.get(el);
+        if (!elAttrStore) {
+            elAttrStore = {};
+            origAttrStore.set(el, elAttrStore);
         }
-        // title
-        if (el.hasAttribute("title")) {
-            var tit = el.getAttribute("title");
-            var tTit = getTranslatedText(tit, el);
-            if (tTit !== null && tTit !== tit) el.setAttribute("title", tTit);
-        }
-        // aria-label
-        if (el.hasAttribute("aria-label")) {
-            var al = el.getAttribute("aria-label");
-            var tAl = getTranslatedText(al, el);
-            if (tAl !== null && tAl !== al) el.setAttribute("aria-label", tAl);
-        }
-        // data-tooltip-content
-        if (el.hasAttribute("data-tooltip-content")) {
-            var dtc = el.getAttribute("data-tooltip-content");
-            var tDtc = getTranslatedText(dtc, el);
-            if (tDtc !== null && tDtc !== dtc) el.setAttribute("data-tooltip-content", tDtc);
-        }
-        // data-placeholder
-        if (el.hasAttribute("data-placeholder")) {
-            var dph = el.getAttribute("data-placeholder");
-            var tDph = getTranslatedText(dph, el);
-            if (tDph !== null && tDph !== dph) el.setAttribute("data-placeholder", tDph);
-        }
-        // aria-description
-        if (el.hasAttribute("aria-description")) {
-            var ad = el.getAttribute("aria-description");
-            var tAd = getTranslatedText(ad, el);
-            if (tAd !== null && tAd !== ad) el.setAttribute("aria-description", tAd);
-        }
-        // data-tooltip
-        if (el.hasAttribute("data-tooltip")) {
-            var dt = el.getAttribute("data-tooltip");
-            var tDt = getTranslatedText(dt, el);
-            if (tDt !== null && tDt !== dt) el.setAttribute("data-tooltip", tDt);
-        }
-        // data-title
-        if (el.hasAttribute("data-title")) {
-            var dtit = el.getAttribute("data-title");
-            var tDtit = getTranslatedText(dtit, el);
-            if (tDtit !== null && tDtit !== dtit) el.setAttribute("data-title", tDtit);
-        }
-    }
 
-    // 3.5 专属 Tooltip 毫秒级防漏自愈引擎（独立私有锁，绝不与主页面全局锁冲突）
-    function fastTranslateTooltip(el) {
-        if (!el) return;
-        var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
-        var node;
-        while ((node = walker.nextNode())) {
-            var val = node.nodeValue;
-            if (val && val.trim()) {
-                var translated = getTranslatedText(val, node);
-                if (translated !== null && translated !== val) {
-                    node.nodeValue = translated;
+        var hasAttrFn = typeof el.hasAttribute === "function";
+        for (var a = 0; a < ATTRS_TO_TRANSLATE.length; a++) {
+            var attr = ATTRS_TO_TRANSLATE[a];
+            var hasThisAttr = hasAttrFn ? el.hasAttribute(attr) : (el.getAttribute(attr) !== null);
+            if (hasThisAttr) {
+                var currentAttrVal = el.getAttribute(attr);
+                if (!currentAttrVal || !currentAttrVal.trim()) continue;
+
+                var attrRec = elAttrStore[attr];
+                if (!attrRec) {
+                    attrRec = { orig: currentAttrVal, lastZh: "" };
+                    elAttrStore[attr] = attrRec;
+                } else {
+                    if (currentAttrVal !== attrRec.lastZh && currentAttrVal !== attrRec.orig) {
+                        attrRec.orig = currentAttrVal;
+                        attrRec.lastZh = "";
+                    }
+                }
+
+                var tAttr = getTranslatedText(attrRec.orig, el);
+                if (tAttr !== null) {
+                    if (currentAttrVal !== tAttr) {
+                        el.setAttribute(attr, tAttr);
+                    }
+                    attrRec.lastZh = tAttr;
+                } else if (attrRec.lastZh && currentAttrVal === attrRec.lastZh) {
+                    el.setAttribute(attr, attrRec.orig);
+                    attrRec.lastZh = "";
                 }
             }
         }
-    }
-
-    function hookTooltipContainer(el) {
-        if (!el || el.nodeType !== 1 || el.__antigravity_tooltip_hooked) return;
-        el.__antigravity_tooltip_hooked = true;
-
-        var isTooltipBusy = false;
-        var obs = new MutationObserver(function () {
-            if (isTooltipBusy) return;
-            isTooltipBusy = true;
-            try {
-                fastTranslateTooltip(el);
-            } finally {
-                isTooltipBusy = false;
-            }
-        });
-
-        obs.observe(el, {
-            childList: true,
-            subtree: true
-        });
-
-        fastTranslateTooltip(el);
-    }
-
-    function syncCorrectTooltips() {
-        var tips = document.querySelectorAll('[role="tooltip"], .compact-tooltip, [class*="tooltip"], [data-tooltip], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div');
-        for (var i = 0; i < tips.length; i++) {
-            hookTooltipContainer(tips[i]);
-            fastTranslateTooltip(tips[i]);
-        }
-    }
-
-    // 3.6 专属右键上下文菜单与浮动浮层毫秒级捕获引擎 (Context Menu & Overlay Engine)
-    function fastTranslateOverlay(el) {
-        if (!el) return;
-        translateSubtree(el);
-    }
-
-    function hookOverlayContainer(el) {
-        if (!el || el.nodeType !== 1 || el.__antigravity_overlay_hooked) return;
-        el.__antigravity_overlay_hooked = true;
-
-        var isOverlayBusy = false;
-        var obs = new MutationObserver(function () {
-            if (isOverlayBusy) return;
-            isOverlayBusy = true;
-            try {
-                fastTranslateOverlay(el);
-            } finally {
-                isOverlayBusy = false;
-            }
-        });
-
-        obs.observe(el, {
-            childList: true,
-            subtree: true
-        });
-
-        fastTranslateOverlay(el);
-    }
-
-    function syncCorrectOverlays() {
-        // 全量侦测右键上下文菜单、Portal 浮层、弹出菜单项、弹窗、Diff 差异徽章与选区工具栏
-        var overlays = document.querySelectorAll(
-            '[data-testid="context-menu-popup"], .agy-overlay, .agy-overlay-item, [role="menu"], [role="menuitem"], [data-radix-popper-content-wrapper], [data-floating-ui-portal] div, .monaco-hover, .zone-widget, [class*="viewing-diff"], [class*="overlay"], [class*="popup"]'
-        );
-        for (var i = 0; i < overlays.length; i++) {
-            hookOverlayContainer(overlays[i]);
-            fastTranslateOverlay(overlays[i]);
-        }
-        syncCorrectTooltips();
     }
 
     function translateSubtree(root) {
@@ -687,112 +659,115 @@
         }
         if (root.nodeType === 1) {
             if (isInsideExcluded(root)) return;
-            
-            // 自动侦测并挂载 Tooltip 容器专属微型监听器
-            if (root.getAttribute && (root.getAttribute("role") === "tooltip" || (root.className && typeof root.className === "string" && root.className.indexOf("tooltip") !== -1))) {
-                hookTooltipContainer(root);
-            }
-            if (root.querySelectorAll) {
-                var nestedTooltips = root.querySelectorAll('[role="tooltip"], .compact-tooltip');
-                for (var nt = 0; nt < nestedTooltips.length; nt++) {
-                    hookTooltipContainer(nestedTooltips[nt]);
-                }
-            }
-
-            // 自动侦测右键上下文菜单与浮层容器
-            if (root.getAttribute && (root.getAttribute("data-testid") === "context-menu-popup" || (root.className && typeof root.className === "string" && root.className.indexOf("agy-overlay") !== -1))) {
-                hookOverlayContainer(root);
-            }
 
             translateElementAttributes(root);
+
             var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
             var node;
             while ((node = walker.nextNode())) {
                 translateTextNode(node);
             }
-            var elementsWithAttrs = root.querySelectorAll("[placeholder], [data-placeholder], [title], [aria-label], [aria-description], [data-tooltip-content], [data-tooltip], [data-title]");
-            for (var i = 0; i < elementsWithAttrs.length; i++) {
-                translateElementAttributes(elementsWithAttrs[i]);
+
+            if (typeof root.querySelectorAll === "function") {
+                var elementsWithAttrs = root.querySelectorAll(
+                    "[placeholder], [data-placeholder], [title], [aria-label], [aria-description], [data-tooltip-content], [data-tooltip], [data-title]"
+                );
+                for (var i = 0; i < elementsWithAttrs.length; i++) {
+                    translateElementAttributes(elementsWithAttrs[i]);
+                }
             }
         }
     }
 
-    // 4. Initial Full Page Translation & Lifecycle Hooks
+    // 8. 144fps Lightweight Overlay Synchronization (Single rAF + 30ms Debounced)
+    var overlayDebounceTimer = null;
+    function scheduleActiveOverlays() {
+        if (overlayDebounceTimer) return;
+        overlayDebounceTimer = setTimeout(function () {
+            overlayDebounceTimer = null;
+            if (typeof requestAnimationFrame === "function") {
+                requestAnimationFrame(syncActiveOverlays);
+            } else {
+                syncActiveOverlays();
+            }
+        }, 30);
+    }
+
+    function syncActiveOverlays() {
+        // 仅精准扫描顶层 Portal 容器，彻底废除 [role="menuitem"] 与 [class*="overlay"] 等耗时全量选择器
+        var popups = document.querySelectorAll(
+            '[data-radix-popper-content-wrapper], [data-floating-ui-portal] > div, [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover'
+        );
+        for (var i = 0; i < popups.length; i++) {
+            translateSubtree(popups[i]);
+        }
+    }
+
+    // 9. Initial Full Page Translation & Lifecycle Hooks
     function translateWholePage() {
         var target = document.body || document.documentElement;
         if (target) {
             translateSubtree(target);
         }
-        syncCorrectOverlays();
+        syncActiveOverlays();
     }
     window.__antigravity_translateWholePage = translateWholePage;
 
     translateWholePage();
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", translateWholePage);
+    // Event hooks with unmount tracking
+    function addTrackedListener(target, eventName, handler, options) {
+        target.addEventListener(eventName, handler, options);
+        activeCleanups.push(function () {
+            target.removeEventListener(eventName, handler, options);
+        });
     }
-    window.addEventListener("load", translateWholePage);
 
-    // SPA client-side routing triggers
-    window.addEventListener("popstate", function() { setTimeout(translateWholePage, 50); });
-    window.addEventListener("hashchange", function() { setTimeout(translateWholePage, 50); });
+    if (document.readyState === "loading") {
+        addTrackedListener(document, "DOMContentLoaded", translateWholePage);
+    }
+    addTrackedListener(window, "load", translateWholePage);
+    addTrackedListener(window, "popstate", function () {
+        var tid = setTimeout(translateWholePage, 50);
+        activeCleanups.push(function () { clearTimeout(tid); });
+    });
+    addTrackedListener(window, "hashchange", function () {
+        var tid = setTimeout(translateWholePage, 50);
+        activeCleanups.push(function () { clearTimeout(tid); });
+    });
 
     // Progressive lightweight scans for React initial async rendering
     var scanDelays = [80, 400];
     for (var k = 0; k < scanDelays.length; k++) {
-        setTimeout(translateWholePage, scanDelays[k]);
+        (function (delay) {
+            var tid = setTimeout(translateWholePage, delay);
+            activeCleanups.push(function () {
+                clearTimeout(tid);
+            });
+        })(scanDelays[k]);
     }
 
-    // User interaction auto-healing triggers (for modals, dropdowns, tab switches)
-    var debounceTimer = null;
-    function scheduleAutoHeal() {
-        if (debounceTimer) clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(function () {
-            translateWholePage();
-        }, 50);
-    }
-
-    // 右键上下文菜单与浮层专属即时捕获触发器 (捕获阶段拦截，0ms/20ms/80ms/200ms 四级递进，确保 React Portal 动画与挂载 100% 捕获)
-    function triggerOverlayHeal() {
-        syncCorrectOverlays();
-        if (typeof requestAnimationFrame === "function") {
-            requestAnimationFrame(syncCorrectOverlays);
-        }
-        setTimeout(syncCorrectOverlays, 20);
-        setTimeout(syncCorrectOverlays, 80);
-        setTimeout(syncCorrectOverlays, 200);
-    }
-
-    document.addEventListener("contextmenu", triggerOverlayHeal, true);
-    document.addEventListener("pointerdown", triggerOverlayHeal, true);
-    document.addEventListener("mousedown", triggerOverlayHeal, true);
-    document.addEventListener("click", triggerOverlayHeal, true);
-    document.addEventListener("keydown", function (e) {
+    // 交互触发轻量同步 (彻底消灭 mousedown/pointerdown 连发，仅保留轻量安全事件)
+    addTrackedListener(document, "click", scheduleActiveOverlays, true);
+    addTrackedListener(document, "contextmenu", scheduleActiveOverlays, true);
+    addTrackedListener(document, "keydown", function (e) {
         if (e.key === "Enter" || e.key === "Escape" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-            triggerOverlayHeal();
+            scheduleActiveOverlays();
         }
     }, true);
 
-    // 目标感知型悬停捕获：仅在指针悬停于按钮、菜单项或浮层元素时 16ms 极轻防抖校准，彻底兼顾 144fps 与即时汉化
+    // 悬停感知：当指针移入按钮、菜单项或 Tooltip 触发源（支持包含内部 svg/icon 子节点）时进行 50ms 极轻防抖同步
     var hoverDebounceTimer = null;
-    document.addEventListener("mouseover", function (e) {
+    addTrackedListener(document, "mouseover", function (e) {
         var t = e.target;
         if (!t) return;
-        var tag = t.tagName;
-        var role = t.getAttribute ? t.getAttribute("role") : null;
-        if (tag === "BUTTON" || role === "tooltip" || role === "button" || role === "menuitem" || (t.className && typeof t.className === "string" && (
-            t.className.indexOf("tooltip") !== -1 ||
-            t.className.indexOf("hover") !== -1 ||
-            t.className.indexOf("copy") !== -1 ||
-            t.className.indexOf("badge") !== -1
-        ))) {
+        if (typeof t.closest === "function" && t.closest('button, [role="button"], [role="tooltip"], [role="menuitem"], [data-state]')) {
             if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
-            hoverDebounceTimer = setTimeout(syncCorrectOverlays, 16);
+            hoverDebounceTimer = setTimeout(scheduleActiveOverlays, 50);
         }
     }, { passive: true, capture: true });
 
-    // 5. High-Performance MutationObserver (childList only, strictly prevents characterData recursion)
+    // 10. High-Performance Global MutationObserver (childList only, 0-DOM-Query Fast Path)
     var isTranslating = false;
     var observer = new MutationObserver(function (mutations) {
         if (isTranslating) return;
@@ -802,7 +777,12 @@
                 var m = mutations[i];
                 if (m.type === "childList") {
                     for (var j = 0; j < m.addedNodes.length; j++) {
-                        translateSubtree(m.addedNodes[j]);
+                        var node = m.addedNodes[j];
+                        if (node.nodeType === 3) {
+                            translateTextNode(node);
+                        } else if (node.nodeType === 1) {
+                            translateSubtree(node);
+                        }
                     }
                 }
             }
@@ -811,85 +791,41 @@
         }
     });
 
-    function startObserving() {
-        var root = document.documentElement || document.body;
-        if (root) {
-            observer.observe(root, {
-                childList: true,
-                subtree: true
-            });
-        } else {
-            setTimeout(startObserving, 30);
-        }
-    }
-    startObserving();
-
-    /**
-     * 闭环自愈平滑重译算法 (Heal and Re-translate DOM)
-     * 利用 reverseMap 反查界面上已呈现的旧中文回英文，再匹配新词库就地热纠偏，实现 0 页面重载即时更新
-     */
-    function healAndReTranslateDOM(root, reverseMap, exactMap) {
-        if (!root) return;
-        try {
-            var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
-            var node;
-            while ((node = walker.nextNode())) {
-                var val = node.nodeValue;
-                if (!val || !val.trim()) continue;
-                var trimmed = val.trim();
-
-                // 1. 若为旧中文，通过 reverseMap 反查出英文 Key
-                var engKey = reverseMap[trimmed];
-                if (engKey && exactMap[engKey]) {
-                    var targetZh = exactMap[engKey];
-                    if (targetZh !== trimmed) {
-                        var lead = val.match(/^\s*/)[0];
-                        var trail = val.match(/\s*$/)[0];
-                        node.nodeValue = lead + targetZh + trail;
-                    }
-                } else if (exactMap[trimmed] && exactMap[trimmed] !== trimmed) {
-                    // 2. 直接支持针对当前中文的纠偏映射（如 "音色 speed" -> "语速"）
-                    var lead2 = val.match(/^\s*/)[0];
-                    var trail2 = val.match(/\s*$/)[0];
-                    node.nodeValue = lead2 + exactMap[trimmed] + trail2;
-                }
-            }
-
-            // 同步就地纠偏属性
-            var attrNodes = root.querySelectorAll("[placeholder], [title], [aria-label], [data-tooltip-content]");
-            for (var i = 0; i < attrNodes.length; i++) {
-                var el = attrNodes[i];
-                var attrs = ["placeholder", "title", "aria-label", "data-tooltip-content"];
-                for (var a = 0; a < attrs.length; a++) {
-                    var attr = attrs[a];
-                    if (el.hasAttribute(attr)) {
-                        var attrVal = el.getAttribute(attr);
-                        if (attrVal) {
-                            var tAttr = attrVal.trim();
-                            var eng = reverseMap[tAttr];
-                            if (eng && exactMap[eng] && exactMap[eng] !== tAttr) {
-                                el.setAttribute(attr, exactMap[eng]);
-                            } else if (exactMap[tAttr] && exactMap[tAttr] !== tAttr) {
-                                el.setAttribute(attr, exactMap[tAttr]);
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("[Antigravity i18n] healAndReTranslateDOM error:", e);
-        }
+    var rootToObserve = document.documentElement || document.body;
+    if (rootToObserve) {
+        observer.observe(rootToObserve, {
+            childList: true,
+            subtree: true
+        });
+        activeCleanups.push(function () {
+            observer.disconnect();
+        });
     }
 
-    /**
-     * 全局无感热重载入口函数 (0 页面刷新，0 状态丢失)
-     */
-    window.__antigravity_reload_i18n = function(newData) {
-        if (!newData || typeof newData !== 'object') return;
-        try {
-            var oldExact = window.__ANTIGRAVITY_EXACT__ || {};
-            var oldReverse = window.__ANTIGRAVITY_REVERSE_MAP__ || {};
+    // 11. Global Self-Teardown Handler for Hot Script Reloading
+    window.__antigravity_cleanup_i18n = function () {
+        if (observer) {
+            try { observer.disconnect(); } catch (e) {}
+        }
+        if (overlayDebounceTimer) {
+            try { clearTimeout(overlayDebounceTimer); } catch (e) {}
+            overlayDebounceTimer = null;
+        }
+        if (hoverDebounceTimer) {
+            try { clearTimeout(hoverDebounceTimer); } catch (e) {}
+            hoverDebounceTimer = null;
+        }
+        for (var c = 0; c < activeCleanups.length; c++) {
+            try { activeCleanups[c](); } catch (e) {}
+        }
+        activeCleanups = [];
+        console.log("[Antigravity i18n] Localization runner v" + RUNNER_VERSION + " successfully cleaned up.");
+    };
 
+    // 12. Loss-free Hot Reload Entry Point
+    window.__antigravity_reload_i18n = function (newData) {
+        if (!newData || typeof newData !== "object") return;
+        try {
             var newExact = newData.exact || {};
             var newReverse = newData.reverse_map || {};
             var newRules = [];
@@ -905,28 +841,22 @@
             }
             var newExemptions = newData.exemptions || [];
 
-            // 1. 原子更新核心全局存储
             window.__ANTIGRAVITY_EXACT__ = newExact;
+            window.__ANTIGRAVITY_REVERSE_MAP__ = newReverse;
             window.__ANTIGRAVITY_REGEX_RULES__ = newRules;
             window.__ANTIGRAVITY_EXEMPTIONS__ = newExemptions;
 
-            // 2. 双向融合保留反向映射表（保留旧反向映射作为自愈桥梁）
-            window.__ANTIGRAVITY_REVERSE_MAP__ = Object.assign({}, oldReverse, newReverse);
-
-            // 3. 执行闭环自愈平滑重译与全页扫描
-            healAndReTranslateDOM(document.body || document.documentElement, oldReverse, newExact);
+            // 基于 WeakMap 中的原版英文快照进行 100% 无损重新评估与翻译
             translateWholePage();
-
-            console.log("[Antigravity i18n Hot-Reload] Successfully reloaded live dictionary and healed DOM.");
-        } catch(e) {
+            console.log("[Antigravity i18n Hot-Reload] Successfully reloaded dictionary and updated UI.");
+        } catch (e) {
             console.error("[Antigravity i18n Hot-Reload] Reload error:", e);
         }
     };
 
-    // 暴露核心方法供主进程与外部调用
+    // 暴露核心方法
     window.__antigravity_getTranslatedText = getTranslatedText;
     window.__antigravity_translateWholePage = translateWholePage;
-    window.__antigravity_healAndReTranslateDOM = healAndReTranslateDOM;
 
-    console.log("[Antigravity i18n] Localization runner v3.4 (Zero-Lag Ultra Performance) successfully initialized and active.");
+    console.log("[Antigravity i18n] Localization runner v4.0 (Zero-Distortion High-FPS Architecture) initialized.");
 })();
