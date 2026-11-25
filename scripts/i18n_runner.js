@@ -409,12 +409,16 @@
             return lead + formatDuration(mResetGen[1]) + "后重置" + trail;
         }
 
-        // C2. 相对时间识别 (如 19m ago, 2h ago, 5s ago, just now 等)
-        if (trimmed === "now" || trimmed === "just now") {
+        // C2. 相对时间识别 (如 19m ago, 2h ago, 5s ago, Just now, <1m ago 等)
+        var lowerTime = trimmed.toLowerCase();
+        if (lowerTime === "now" || lowerTime === "just now") {
             return lead + "刚刚" + trail;
         }
-        if (trimmed === "yesterday") {
+        if (lowerTime === "yesterday") {
             return lead + "昨天" + trail;
+        }
+        if (/^<\s*1\s*(?:m|min|mins|minute|minutes)\s+ago$/i.test(trimmed) || lowerTime === "less than a minute ago") {
+            return lead + "1 分钟内" + trail;
         }
         var mCompactTime = trimmed.match(/^(\d+)\s*(s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours|d|day|days|w|wk|wks|week|weeks|mo|mon|mons|month|months|y|yr|yrs|year|years)(?:\s+ago)?$/i);
         if (mCompactTime) {
@@ -685,27 +689,111 @@
         }
     }
 
-    // 8. 144fps Lightweight Overlay Synchronization (Single rAF + 30ms Debounced)
-    var overlayDebounceTimer = null;
-    function scheduleActiveOverlays() {
-        if (overlayDebounceTimer) return;
-        overlayDebounceTimer = setTimeout(function () {
-            overlayDebounceTimer = null;
+    // 8. Zero-Flash High-FPS Overlay & Tooltip Synchronization
+    var POPUP_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-floating-ui-portal] > div, [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover';
+    var POPUP_ROOT_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover';
+    var observedPopupSet = typeof WeakSet === "function" ? new WeakSet() : null;
+    var isPopupTranslating = false;
+    var popupObserver = null;
+
+    if (typeof MutationObserver === "function") {
+        popupObserver = new MutationObserver(function (mutations) {
+            if (isPopupTranslating) return;
+            isPopupTranslating = true;
+            try {
+                for (var i = 0; i < mutations.length; i++) {
+                    var m = mutations[i];
+                    if (m.type === "characterData") {
+                        translateTextNode(m.target);
+                    } else if (m.type === "childList") {
+                        for (var j = 0; j < m.addedNodes.length; j++) {
+                            var n = m.addedNodes[j];
+                            if (n.nodeType === 3) {
+                                translateTextNode(n);
+                            } else if (n.nodeType === 1) {
+                                translateSubtree(n);
+                            }
+                        }
+                    }
+                }
+                // 吞掉本次同步翻译写回产生的自身 characterData 记录，严防微任务自激
+                if (typeof popupObserver.takeRecords === "function") {
+                    popupObserver.takeRecords();
+                }
+            } finally {
+                isPopupTranslating = false;
+            }
+        });
+    }
+
+    function observePopupContainer(el) {
+        if (!popupObserver || !el || el.nodeType !== 1) return;
+        if (observedPopupSet) {
+            if (observedPopupSet.has(el)) return;
+            observedPopupSet.add(el);
+        }
+        if (isInsideExcluded(el) || isInsideProseFlow(el)) return;
+        try {
+            popupObserver.observe(el, {
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        } catch (e) {}
+    }
+
+    function attachPopupObservers(root) {
+        if (!popupObserver || !root || root.nodeType !== 1) return;
+        if (typeof root.matches === "function" && root.matches(POPUP_ROOT_SELECTOR)) {
+            observePopupContainer(root);
+        }
+        if (typeof root.querySelectorAll === "function" && (root.childElementCount > 0 || root === document.body)) {
+            var nested = root.querySelectorAll(POPUP_ROOT_SELECTOR);
+            for (var i = 0; i < nested.length; i++) {
+                observePopupContainer(nested[i]);
+            }
+        }
+    }
+
+    var overlayMicrotaskQueued = false;
+    var overlayRafId = null;
+    var overlayTrailingTimer = null;
+
+    function syncActiveOverlays() {
+        var popups = document.querySelectorAll(POPUP_SELECTOR);
+        for (var i = 0; i < popups.length; i++) {
+            observePopupContainer(popups[i]);
+            translateSubtree(popups[i]);
+        }
+        if (popupObserver && typeof popupObserver.takeRecords === "function") {
+            popupObserver.takeRecords();
+        }
+    }
+
+    function scheduleActiveOverlays(immediate) {
+        if (immediate && !overlayMicrotaskQueued && typeof Promise === "function") {
+            overlayMicrotaskQueued = true;
+            Promise.resolve().then(function () {
+                overlayMicrotaskQueued = false;
+                syncActiveOverlays();
+            });
+        }
+        if (!overlayRafId) {
             if (typeof requestAnimationFrame === "function") {
-                requestAnimationFrame(syncActiveOverlays);
+                overlayRafId = requestAnimationFrame(function () {
+                    overlayRafId = null;
+                    syncActiveOverlays();
+                });
             } else {
                 syncActiveOverlays();
             }
-        }, 30);
-    }
-
-    function syncActiveOverlays() {
-        // 仅精准扫描顶层 Portal 容器，彻底废除 [role="menuitem"] 与 [class*="overlay"] 等耗时全量选择器
-        var popups = document.querySelectorAll(
-            '[data-radix-popper-content-wrapper], [data-floating-ui-portal] > div, [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover'
-        );
-        for (var i = 0; i < popups.length; i++) {
-            translateSubtree(popups[i]);
+        }
+        if (immediate) {
+            if (overlayTrailingTimer) clearTimeout(overlayTrailingTimer);
+            overlayTrailingTimer = setTimeout(function () {
+                overlayTrailingTimer = null;
+                syncActiveOverlays();
+            }, 45);
         }
     }
 
@@ -714,6 +802,7 @@
         var target = document.body || document.documentElement;
         if (target) {
             translateSubtree(target);
+            attachPopupObservers(target);
         }
         syncActiveOverlays();
     }
@@ -753,25 +842,34 @@
         })(scanDelays[k]);
     }
 
-    // 交互触发轻量同步 (彻底消灭 mousedown/pointerdown 连发，仅保留轻量安全事件)
-    addTrackedListener(document, "click", scheduleActiveOverlays, true);
-    addTrackedListener(document, "contextmenu", scheduleActiveOverlays, true);
+    // 交互触发零延迟同帧同步 (消灭悬停切换时的英文闪现)
+    addTrackedListener(document, "click", function () { scheduleActiveOverlays(true); }, true);
+    addTrackedListener(document, "contextmenu", function () { scheduleActiveOverlays(true); }, true);
+    addTrackedListener(document, "focusin", function () { scheduleActiveOverlays(true); }, true);
     addTrackedListener(document, "keydown", function (e) {
         if (e.key === "Enter" || e.key === "Escape" || e.key === "ArrowDown" || e.key === "ArrowUp") {
-            scheduleActiveOverlays();
+            scheduleActiveOverlays(true);
         }
     }, true);
 
-    // 悬停感知：当指针移入按钮、菜单项或 Tooltip 触发源（支持包含内部 svg/icon 子节点）时进行 50ms 极轻防抖同步
-    var hoverDebounceTimer = null;
-    addTrackedListener(document, "mouseover", function (e) {
+    var lastHoverControl = null;
+    function handleControlHover(e) {
         var t = e.target;
-        if (!t) return;
-        if (typeof t.closest === "function" && t.closest('button, [role="button"], [role="tooltip"], [role="menuitem"], [data-state]')) {
-            if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
-            hoverDebounceTimer = setTimeout(scheduleActiveOverlays, 50);
+        if (!t || typeof t.closest !== "function") return;
+        var ctrl = t.closest('button, [role="button"], [role="tooltip"], [role="menuitem"], [data-state], [aria-describedby], [data-tooltip], [data-tooltip-content]');
+        if (!ctrl) {
+            lastHoverControl = null;
+            return;
         }
-    }, { passive: true, capture: true });
+        if (ctrl !== lastHoverControl) {
+            lastHoverControl = ctrl;
+            translateElementAttributes(ctrl);
+        }
+        // 在冒泡阶段即时触发微任务 + 同帧 rAF，确保与 React 共用 Tooltip 文案同帧完成翻译
+        scheduleActiveOverlays(true);
+    }
+    addTrackedListener(document, "pointerover", handleControlHover, { passive: true, capture: false });
+    addTrackedListener(document, "mouseover", handleControlHover, { passive: true, capture: false });
 
     // 10. High-Performance Global MutationObserver (childList only, 0-DOM-Query Fast Path)
     var isTranslating = false;
@@ -788,6 +886,7 @@
                             translateTextNode(node);
                         } else if (node.nodeType === 1) {
                             translateSubtree(node);
+                            attachPopupObservers(node);
                         }
                     }
                 }
@@ -813,14 +912,18 @@
         if (observer) {
             try { observer.disconnect(); } catch (e) {}
         }
-        if (overlayDebounceTimer) {
-            try { clearTimeout(overlayDebounceTimer); } catch (e) {}
-            overlayDebounceTimer = null;
+        if (popupObserver) {
+            try { popupObserver.disconnect(); } catch (e) {}
         }
-        if (hoverDebounceTimer) {
-            try { clearTimeout(hoverDebounceTimer); } catch (e) {}
-            hoverDebounceTimer = null;
+        if (overlayRafId && typeof cancelAnimationFrame === "function") {
+            try { cancelAnimationFrame(overlayRafId); } catch (e) {}
+            overlayRafId = null;
         }
+        if (overlayTrailingTimer) {
+            try { clearTimeout(overlayTrailingTimer); } catch (e) {}
+            overlayTrailingTimer = null;
+        }
+        lastHoverControl = null;
         for (var c = 0; c < activeCleanups.length; c++) {
             try { activeCleanups[c](); } catch (e) {}
         }

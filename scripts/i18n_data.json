@@ -4336,7 +4336,22 @@
     "Reload page": "重新加载页面",
     "reload page": "重新加载页面",
     "Page info": "页面信息",
-    "page info": "页面信息"
+    "page info": "页面信息",
+    "Insert into main conversation": "插入主会话",
+    "insert into main conversation": "插入主会话",
+    "Insert into conversation": "插入会话",
+    "Insert into current conversation": "插入当前会话",
+    "Insert into chat": "插入对话",
+    "Inserted into main conversation": "已插入主会话",
+    "Copied to clipboard": "已复制到剪贴板",
+    "Copy response": "复制回复",
+    "Copy text": "复制文本",
+    "Just now": "刚刚",
+    "Yesterday": "昨天",
+    "<1m ago": "1 分钟内",
+    "< 1m ago": "1 分钟内",
+    "Less than a minute ago": "1 分钟内",
+    "less than a minute ago": "1 分钟内"
   },
   "reverse_map": {
     "始终询问": [
