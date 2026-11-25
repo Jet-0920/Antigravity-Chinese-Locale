@@ -4351,7 +4351,15 @@
     "<1m ago": "1 分钟内",
     "< 1m ago": "1 分钟内",
     "Less than a minute ago": "1 分钟内",
-    "less than a minute ago": "1 分钟内"
+    "less than a minute ago": "1 分钟内",
+    "Continue as a New Conversation": "作为新会话继续",
+    "Continue as a new conversation": "作为新会话继续",
+    "continue as a new conversation": "作为新会话继续",
+    "Continue as new conversation": "作为新会话继续",
+    "Close side question": "关闭侧边提问",
+    "Close Side Question": "关闭侧边提问",
+    "Open in new conversation": "在新会话中打开",
+    "Open in New Conversation": "在新会话中打开"
   },
   "reverse_map": {
     "始终询问": [
