@@ -502,6 +502,20 @@
             return lead + "使用本应用即表示您同意其" + trail;
         }
 
+        // C14. 侧边对话前缀拼接提示 (适配悬浮 Tooltip / title 中的 "Side Question: <标题>")
+        var mSidePrefix = trimmed.match(/^(?:Side\s+Question|Side\s+Conversation):\s*(.+)$/i);
+        if (mSidePrefix) {
+            return lead + "侧边对话：" + mSidePrefix[1] + trail;
+        }
+        var mDelSidePrefix = trimmed.match(/^Delete\s+(?:side\s+question|side\s+conversation):\s*(.+)$/i);
+        if (mDelSidePrefix) {
+            return lead + "删除侧边对话：" + mDelSidePrefix[1] + trail;
+        }
+        var mOpenSidePrefix = trimmed.match(/^Open\s+(?:side\s+question|side\s+conversation):\s*(.+)$/i);
+        if (mOpenSidePrefix) {
+            return lead + "打开侧边对话：" + mOpenSidePrefix[1] + trail;
+        }
+
         var exactMap = window.__ANTIGRAVITY_EXACT__ || EXACT;
         var regexList = window.__ANTIGRAVITY_REGEX_RULES__ || REGEX_RULES;
 
@@ -856,7 +870,7 @@
     function handleControlHover(e) {
         var t = e.target;
         if (!t || typeof t.closest !== "function") return;
-        var ctrl = t.closest('button, [role="button"], [role="tooltip"], [role="menuitem"], [data-state], [aria-describedby], [data-tooltip], [data-tooltip-content]');
+        var ctrl = t.closest('button, [role="button"], [role="tooltip"], [role="menuitem"], [data-state], [aria-describedby], [data-tooltip], [data-tooltip-content], [data-title], [title]');
         if (!ctrl) {
             lastHoverControl = null;
             return;

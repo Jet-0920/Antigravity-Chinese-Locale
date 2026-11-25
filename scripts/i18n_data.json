@@ -959,14 +959,14 @@
     "Notes": "注意事项",
     "Changelog": "更新日志",
     "Contributing": "参与贡献",
-    "Ask a side question without interrupting the main conversation": "在不打断主会话的前提下发起侧边提问",
-    "Cannot promote while side question is running": "侧边提问运行期间无法提升为主会话",
-    "Ask a side question": "发起侧边提问",
-    "Side Question": "侧边提问",
-    "Side question": "侧边提问",
-    "Side Question:": "侧边提问：",
-    "Stop Side Question": "停止侧边提问",
-    "Stop side question": "停止侧边提问",
+    "Ask a side question without interrupting the main conversation": "在不打断主会话的前提下发起侧边对话",
+    "Cannot promote while side question is running": "侧边对话运行期间无法提升为主会话",
+    "Ask a side question": "发起侧边对话",
+    "Side Question": "侧边对话",
+    "Side question": "侧边对话",
+    "Side Question:": "侧边对话：",
+    "Stop Side Question": "停止侧边对话",
+    "Stop side question": "停止侧边对话",
     "Promote to Conversation": "提升为主会话",
     "Promote to conversation": "提升为主会话",
     "Cannot promote during Battle Mode — end the battle first": "处于对战模式时无法提升会话 — 请先结束对战",
@@ -1820,16 +1820,16 @@
     "Settings for conversations in this project": "当前项目中的会话设置。",
     "Manage project settings.": "管理项目相关设置。",
     "Manage project settings": "管理项目相关设置。",
-    "New Side Question": "新建侧边提问",
-    "New side question": "新建侧边提问",
-    "New Side Questions": "新建侧边提问",
-    "Create Side Question": "创建侧边提问",
-    "Create a side question": "创建侧边提问",
-    "Side Question History": "侧边提问历史",
-    "Side question history": "侧边提问历史",
-    "Side Question Panel": "侧边提问面板",
-    "Open in side question": "在侧边提问中打开",
-    "Open in Side Question": "在侧边提问中打开",
+    "New Side Question": "新建侧边对话",
+    "New side question": "新建侧边对话",
+    "New Side Questions": "新建侧边对话",
+    "Create Side Question": "创建侧边对话",
+    "Create a side question": "创建侧边对话",
+    "Side Question History": "侧边对话历史",
+    "Side question history": "侧边对话历史",
+    "Side Question Panel": "侧边对话面板",
+    "Open in side question": "在侧边对话中打开",
+    "Open in Side Question": "在侧边对话中打开",
     "Your Plan: Google AI Pro": "当前方案：Google AI Pro",
     "Your Plan: Google AI Ultra": "当前方案：Google AI Ultra",
     "Your Plan: Google AI Basic": "当前计划：Google AI Basic",
@@ -1871,10 +1871,10 @@
     "Edit comment": "编辑评论",
     "Delete comment": "删除评论",
     "Cancel comment": "取消评论",
-    "Delete Side Question": "删除侧边提问",
-    "Delete side question": "删除侧边提问",
-    "Delete Side Question?": "删除侧边提问？",
-    "Delete side question?": "删除侧边提问？",
+    "Delete Side Question": "删除侧边对话",
+    "Delete side question": "删除侧边对话",
+    "Delete Side Question?": "删除侧边对话？",
+    "Delete side question?": "删除侧边对话？",
     "Promote to main conversation": "提升为主会话",
     "Promote side question": "转为主会话",
     "Promote Side Question": "转为主会话",
@@ -1882,8 +1882,8 @@
     "Started from": "发起于",
     "Show": "查看",
     "Jump to original message": "跳转至原始消息",
-    "Are you sure you want to delete this side question? This action cannot be undone.": "确定要删除此侧边提问吗？此操作无法撤销。",
-    "Are you sure you want to delete this side question?": "确定要删除此侧边提问吗？",
+    "Are you sure you want to delete this side question? This action cannot be undone.": "确定要删除此侧边对话吗？此操作无法撤销。",
+    "Are you sure you want to delete this side question?": "确定要删除此侧边对话吗？",
     "This action cannot be undone.": "此操作无法撤销。",
     "Group By": "分组方式",
     "Sort Conversations": "会话排序",
@@ -1995,7 +1995,7 @@
     "Click to view or edit comment": "点击查看或编辑批注",
     "Add screenshot to conversation": "将屏幕截图添加到会话",
     "Add inline comment": "添加行内批注",
-    "Ask a quick question without interrupting the main conversation.": "发起快速侧边提问，无需打断当前主会话的智能体思路。",
+    "Ask a quick question without interrupting the main conversation.": "发起快速侧边对话，无需打断当前主会话的智能体思路。",
     "Comment on the plan before your agent starts, and get a walkthrough when it finishes.": "在智能体执行前批注计划，并在完成时查看演示讲解。",
     "Continue your work from another device with Remote Control. Scan the QR code or open the link below.": "使用远程控制功能在其他设备上无缝继续您的工作。扫描下方二维码或在浏览器中打开链接。",
     "Background tasks and terminals agents left running, across all conversations.": "所有会话中智能体遗留并在后台持续运行的任务与终端进程一览。",
@@ -2008,7 +2008,7 @@
     "Pin / unpin conversation": "置顶 / 取消置顶会话",
     "Conversations outside of projects": "项目外部独立会话",
     "Outside of Projects": "项目外部",
-    "side question": "侧边提问",
+    "side question": "侧边对话",
     "Your Plan: Pro": "当前方案：Pro 专业版",
     "Your plan: Google AI Pro": "当前方案：Google AI Pro",
     "Your plan: Google AI Ultra": "当前方案：Google AI Ultra",
@@ -2102,7 +2102,7 @@
     "Close tab": "关闭标签页",
     "Duplicate Tab": "复制标签页",
     "Reopen closed tab": "重新打开已关闭的标签页",
-    "new side question": "新建侧边提问",
+    "new side question": "新建侧边对话",
     "Stop Execution": "停止执行",
     "stop execution": "停止执行",
     "Start Execution": "开始执行",
@@ -2769,9 +2769,9 @@
     "61% left": "61% 剩余",
     "94% left": "94% 剩余",
     "100% left": "100% 剩余",
-    "Side question:": "侧边提问：",
-    "Create a Side Question": "创建侧边提问",
-    "Ask a side question without interrupting the main conversation.": "在不打断主会话的前提下发起侧边提问。",
+    "Side question:": "侧边对话：",
+    "Create a Side Question": "创建侧边对话",
+    "Ask a side question without interrupting the main conversation.": "在不打断主会话的前提下发起侧边对话。",
     "Read URLs:": "读取 URL：",
     "Allow / deny agent reading specific URLs or domains.": "允许 / 禁止智能体读取特定 URL 或域名。",
     "Allow/deny agent reading specific URLs or domains.": "允许 / 禁止智能体读取特定 URL 或域名。",
@@ -2924,7 +2924,7 @@
     "This cannot be undone.": "此操作无法撤销。",
     "This cannot be undone": "此操作无法撤销",
     "Failed to delete conversation": "删除会话失败",
-    "Failed to delete side question": "删除侧边提问失败",
+    "Failed to delete side question": "删除侧边对话失败",
     "View archived in the sidebar (![filter](icon://filter_list) menu).": "可在侧边栏查看已归档内容（筛选菜单）。",
     "View archived in the sidebar (Display options menu).": "可在侧边栏查看已归档内容（显示选项菜单）。",
     "View archived in the sidebar": "在侧边栏查看已归档内容",
@@ -3021,13 +3021,13 @@
     "open keyboard shortcuts": "打开快捷键设置",
     "Open keyboard shortcuts": "打开快捷键设置",
     "Open Keyboard Shortcut": "打开快捷键设置",
-    "Side Question Selection": "对选中文本发起侧边提问",
-    "side question selection": "对选中文本发起侧边提问",
-    "Side question selection": "对选中文本发起侧边提问",
-    "Side Question on Selection": "对选中文本发起侧边提问",
-    "Side Question from Selection": "从选中文本发起侧边提问",
-    "Ask Side Question on Selection": "对选中文本发起侧边提问",
-    "Start Side Question from Selection": "从选中文本发起侧边提问",
+    "Side Question Selection": "对选中文本发起侧边对话",
+    "side question selection": "对选中文本发起侧边对话",
+    "Side question selection": "对选中文本发起侧边对话",
+    "Side Question on Selection": "对选中文本发起侧边对话",
+    "Side Question from Selection": "从选中文本发起侧边对话",
+    "Ask Side Question on Selection": "对选中文本发起侧边对话",
+    "Start Side Question from Selection": "从选中文本发起侧边对话",
     "This undo action will make the following code changes:": "本次撤回操作将产生以下代码改动：",
     "Confirming this undo action will make the following code changes:": "确认撤回将执行以下代码更改：",
     "Undo restores your entire workspace to its state at this point.": "撤回操作将使整个工作区恢复到此状态。",
@@ -3045,7 +3045,7 @@
     "View archived in the sidebar ( ≡ menu).": "可在侧边栏查看已归档内容（筛选菜单）。",
     "open Keyboard Shortcuts": "打开快捷键设置",
     "Open Keyboard Shortcuts...": "打开快捷键设置...",
-    "Side Question (Selection)": "对选中文本发起侧边提问",
+    "Side Question (Selection)": "对选中文本发起侧边对话",
     "Are you sure you want to delete the project": "确定要删除该项目",
     "This will permanently delete": "此操作将永久删除",
     "within it": "。",
@@ -3657,8 +3657,8 @@
     "confirmation required to execute this step": "执行此步骤需要确认",
     "A copy of the workspace snapshot recorded at this step.": "此步骤记录的工作区快照副本。",
     "a copy of the workspace snapshot recorded at this step.": "此步骤记录的工作区快照副本。",
-    "Cannot promote a subagent's side question": "无法提升子智能体的侧边提问",
-    "cannot promote a subagent's side question": "无法提升子智能体的侧边提问",
+    "Cannot promote a subagent's side question": "无法提升子智能体的侧边对话",
+    "cannot promote a subagent's side question": "无法提升子智能体的侧边对话",
     "Cannot skip: missing cascadeId or stepIndex": "无法跳过：缺少级联 ID 或步骤索引",
     "cannot skip: missing cascadeid or stepindex": "无法跳过：缺少级联 ID 或步骤索引",
     "Collapse subagents": "折叠子智能体",
@@ -4277,8 +4277,8 @@
     "Artifact": "工件",
     "artifacts": "工件",
     "artifact": "工件",
-    "Side Questions": "侧边提问",
-    "create side question": "创建侧边提问",
+    "Side Questions": "侧边对话",
+    "create side question": "创建侧边对话",
     "Redo": "重做",
     "redo": "重做",
     "Paste": "粘贴",
@@ -4356,10 +4356,26 @@
     "Continue as a new conversation": "作为新会话继续",
     "continue as a new conversation": "作为新会话继续",
     "Continue as new conversation": "作为新会话继续",
-    "Close side question": "关闭侧边提问",
-    "Close Side Question": "关闭侧边提问",
+    "Close side question": "关闭侧边对话",
+    "Close Side Question": "关闭侧边对话",
     "Open in new conversation": "在新会话中打开",
-    "Open in New Conversation": "在新会话中打开"
+    "Open in New Conversation": "在新会话中打开",
+    "Side Conversation": "侧边对话",
+    "Side conversation": "侧边对话",
+    "side conversation": "侧边对话",
+    "Side Conversation:": "侧边对话：",
+    "Side conversation:": "侧边对话：",
+    "Side Conversations": "侧边对话",
+    "New Side Conversation": "新建侧边对话",
+    "New side conversation": "新建侧边对话",
+    "Delete Side Conversation": "删除侧边对话",
+    "Delete side conversation": "删除侧边对话",
+    "Close Side Conversation": "关闭侧边对话",
+    "Close side conversation": "关闭侧边对话",
+    "Open in Side Conversation": "在侧边对话中打开",
+    "Open in side conversation": "在侧边对话中打开",
+    "View Side Question": "查看侧边对话",
+    "View side question": "查看侧边对话"
   },
   "reverse_map": {
     "始终询问": [
@@ -4506,11 +4522,13 @@
     "自动 (预览)": [
       "Auto (Preview)"
     ],
-    "侧边提问": [
+    "侧边对话": [
       "Side Question",
       "Side question",
       "Side Questions",
-      "side question"
+      "side question",
+      "Side Conversation",
+      "Side conversation"
     ],
     "已添加 (已暂存)": [
       "Added (Staged)"
@@ -4610,11 +4628,12 @@
       "Pin / Unpin conversation",
       "Pin / unpin conversation"
     ],
-    "新建侧边提问": [
+    "新建侧边对话": [
       "New Side Question",
       "New side question",
       "New Side Questions",
-      "new side question"
+      "new side question",
+      "New Side Conversation"
     ],
     "添加评论": [
       "Add Comment",
@@ -4628,9 +4647,10 @@
       "Download",
       "download"
     ],
-    "删除侧边提问": [
+    "删除侧边对话": [
       "Delete Side Question",
-      "Delete side question"
+      "Delete side question",
+      "Delete Side Conversation"
     ],
     "提升为主会话": [
       "Promote to Conversation",
@@ -4783,17 +4803,9 @@
       "View Site Information",
       "View site information"
     ],
-    "侧边聊天": [
-      "Side Question"
-    ],
-    "新建侧边聊天": [
-      "New Side Question"
-    ],
-    "删除侧边聊天": [
-      "Delete Side Question"
-    ],
-    "停止侧边聊天": [
-      "Stop Side Question"
+    "停止侧边对话": [
+      "Stop Side Question",
+      "Stop side question"
     ],
     "停止执行": [
       "Stop Execution",
@@ -5137,8 +5149,10 @@
       "Link Settings",
       "link settings"
     ],
-    "创建侧边聊天": [
-      "Create Side Question"
+    "创建侧边对话": [
+      "Create Side Question",
+      "Create a side question",
+      "Create a Side Question"
     ],
     "未命名任务": [
       "Untitled",
@@ -6745,7 +6759,7 @@
     },
     {
       "pattern": "^Side\\s+Question\\s+(\\d+)$",
-      "replacement": "侧边聊天 "
+      "replacement": "侧边对话 $1"
     },
     {
       "pattern": "^(\\d+) agent(s?) running$",
@@ -7021,11 +7035,11 @@
     },
     {
       "pattern": "^New\\s+side\\s+question$",
-      "replacement": "新建侧边聊天"
+      "replacement": "新建侧边对话"
     },
     {
       "pattern": "^New\\s+Side\\s+Question$",
-      "replacement": "新建侧边聊天"
+      "replacement": "新建侧边对话"
     },
     {
       "pattern": "^Search (.*?) in (.*?)$",
@@ -7425,11 +7439,11 @@
     },
     {
       "pattern": "^Side Question Selection\\.?$",
-      "replacement": "对选中文本发起侧边聊天"
+      "replacement": "对选中文本发起侧边对话"
     },
     {
       "pattern": "^(?:Ask\\s+)?Side\\s+Question\\s+(?:on|from)?\\s*Selection\\.?$",
-      "replacement": "对选中文本发起侧边聊天"
+      "replacement": "对选中文本发起侧边对话"
     },
     {
       "pattern": "^Are you sure you want to delete the project\\s+(.+?)\\?$",
@@ -7549,7 +7563,7 @@
     },
     {
       "pattern": "^Delete\\ side\\ question:\\ (.+?)$",
-      "replacement": "删除附加问题：$1"
+      "replacement": "删除侧边对话：$1"
     },
     {
       "pattern": "^Duplicate\\ (.+?)\\ name$",
@@ -7626,6 +7640,18 @@
     {
       "pattern": "^(Comment|Quote|Copy|Edit)\\s+([A-Za-z0-9\\+\\-]+)$",
       "replacement": "$1 $2"
+    },
+    {
+      "pattern": "^[Ss]ide\\s+[Qq]uestion:\\s*(.+)$",
+      "replacement": "侧边对话：$1"
+    },
+    {
+      "pattern": "^[Ss]ide\\s+[Cc]onversation:\\s*(.+)$",
+      "replacement": "侧边对话：$1"
+    },
+    {
+      "pattern": "^Delete\\s+[Ss]ide\\s+[Qq]uestion:\\s*(.+)$",
+      "replacement": "删除侧边对话：$1"
     }
   ],
   "exemptions": []
