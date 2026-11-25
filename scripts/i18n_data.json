@@ -3778,8 +3778,8 @@
     "unstage all changes": "取消暂存所有更改",
     "Create new branch from current commit": "从当前提交创建新分支",
     "create new branch from current commit": "从当前提交创建新分支",
-    "Artifact Comments": "成果评论",
-    "artifact comments": "成果评论",
+    "Artifact Comments": "工件评论",
+    "artifact comments": "工件评论",
     "Artifact image": "成果图片",
     "artifact image": "成果图片",
     "Artifact not found": "未找到成果",
@@ -4312,7 +4312,31 @@
     "By using this app, you agree to its Terms of Service.": "使用本应用即表示您同意其服务条款。",
     "terms of service": "服务条款",
     "Privacy Policy": "隐私政策",
-    "privacy policy": "隐私政策"
+    "privacy policy": "隐私政策",
+    "Inspect element to comment": "选取页面元素以添加评论",
+    "inspect element to comment": "选取页面元素以添加评论",
+    "Inspect Element to Comment": "选取页面元素以添加评论",
+    "Inspect element": "审查元素",
+    "inspect element": "审查元素",
+    "Stop inspecting": "停止选取元素",
+    "stop inspecting": "停止选取元素",
+    "Stop inspecting elements": "停止选取页面元素",
+    "stop inspecting elements": "停止选取页面元素",
+    "Exit element inspection": "退出元素选取",
+    "exit element inspection": "退出元素选取",
+    "Cancel inspection": "取消选取元素",
+    "cancel inspection": "取消选取元素",
+    "Click an element to comment": "点击页面元素以添加评论",
+    "Click any element to leave a comment": "点击任意元素以添加评论",
+    "Select an element to comment": "选择元素以添加评论",
+    "Open externally": "在外部浏览器中打开",
+    "open externally": "在外部浏览器中打开",
+    "View downloads": "查看下载记录",
+    "view downloads": "查看下载记录",
+    "Reload page": "重新加载页面",
+    "reload page": "重新加载页面",
+    "Page info": "页面信息",
+    "page info": "页面信息"
   },
   "reverse_map": {
     "始终询问": [
@@ -6192,6 +6216,23 @@
       "Marketing emails",
       "Marketing Emails",
       "marketing emails"
+    ],
+    "选取页面元素以添加评论": [
+      "Inspect element to comment",
+      "Inspect Element to Comment",
+      "inspect element to comment"
+    ],
+    "停止选取元素": [
+      "Stop inspecting",
+      "stop inspecting"
+    ],
+    "查看下载记录": [
+      "View downloads",
+      "view downloads"
+    ],
+    "重新加载页面": [
+      "Reload page",
+      "reload page"
     ]
   },
   "regex_rules": [
