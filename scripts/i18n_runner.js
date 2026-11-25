@@ -517,21 +517,56 @@
             return lead + "打开侧边对话：" + mOpenSidePrefix[1] + trail;
         }
 
-        // C15. 12 小时制时段格式化 (9:00 AM -> 上午 9:00, 12:00 PM -> 中午 12:00, 2:00 PM -> 下午 2:00)
+        // C15. 12 小时制时段与组合定时摘要格式化 (如 "9:00 AM", "Daily at 9:00 AM", "每天 9:00 AM")
+        function formatTime12h(hourStr, minStr, ampmStr) {
+            var hourNum = parseInt(hourStr, 10);
+            var ampm = ampmStr.toUpperCase();
+            if (hourNum < 1 || hourNum > 12) return null;
+            var zhPeriod = ampm === "AM"
+                ? (hourNum === 12 ? "凌晨" : "上午")
+                : (hourNum === 12 ? "中午" : "下午");
+            return zhPeriod + " " + hourNum + ":" + minStr;
+        }
         var mAmPm = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
         if (mAmPm) {
-            var hourNum = parseInt(mAmPm[1], 10);
-            var mins = mAmPm[2];
-            var ampm = mAmPm[3].toUpperCase();
-            if (hourNum >= 1 && hourNum <= 12) {
-                var zhPeriod = ampm === "AM"
-                    ? (hourNum === 12 ? "凌晨" : "上午")
-                    : (hourNum === 12 ? "中午" : "下午");
-                return lead + zhPeriod + " " + hourNum + ":" + mins + trail;
+            var t12 = formatTime12h(mAmPm[1], mAmPm[2], mAmPm[3]);
+            if (t12) return lead + t12 + trail;
+        }
+        var mSchedCombo = trimmed.match(/^(Daily|Every\s+day|Weekdays|Every\s+weekday|Weekly|Every\s+week|Monthly|Every\s+month|Hourly|Every\s+hour|每天|每日|每周|每月|每小时|每个工作日)(?:\s+(at|around|于|大约))?\s+(\d{1,2}):(\d{2})\s*(AM|PM)(?:\s+((?:GMT|UTC)[+-]?\d+))?$/i);
+        if (mSchedCombo) {
+            var cadKey = mSchedCombo[1].toLowerCase().replace(/\s+/g, " ");
+            var cadZh = (cadKey === "daily" || cadKey === "every day" || cadKey === "每天" || cadKey === "每日") ? "每天"
+                : ((cadKey === "weekdays" || cadKey === "every weekday" || cadKey === "每个工作日") ? "每个工作日"
+                : ((cadKey === "weekly" || cadKey === "every week" || cadKey === "每周") ? "每周"
+                : ((cadKey === "monthly" || cadKey === "every month" || cadKey === "每月") ? "每月" : "每小时")));
+            var midWord = (mSchedCombo[2] && /^(around|大约)$/i.test(mSchedCombo[2])) ? "大约 " : "";
+            var t12Combo = formatTime12h(mSchedCombo[3], mSchedCombo[4], mSchedCombo[5]);
+            if (t12Combo) {
+                var tzSuffix = mSchedCombo[6] ? (" " + mSchedCombo[6]) : "";
+                return lead + cadZh + " " + midWord + t12Combo + tzSuffix + trail;
             }
         }
 
-        // C16. 定时计划时间连接词上下文精确匹配 (Every day [at] 9:00 AM / Every week [on] Monday)
+        // C16. 定时计划时间连接词与运行环境拼接 (如 "Flash · This computer", "Next run: ...")
+        var mAgentEnv = trimmed.match(/^(.+?)\s*([·•])\s*(This computer|This machine|Local|Cloud|Cloud sandbox)$/i);
+        if (mAgentEnv) {
+            var envRaw = mAgentEnv[3].toLowerCase();
+            var envZh = (envRaw === "this computer" || envRaw === "this machine") ? "这台电脑"
+                : (envRaw === "local" ? "本机" : (envRaw === "cloud" ? "云端" : "云端沙箱"));
+            return lead + mAgentEnv[1] + " " + mAgentEnv[2] + " " + envZh + trail;
+        }
+        var mNextRun = trimmed.match(/^(Next|Last)\s+run(?:\s*(?::|in))\s*(.+)$/i);
+        if (mNextRun) {
+            var runDir = mNextRun[1].toLowerCase() === "next" ? "下次运行" : "上次运行";
+            var sepWord = /\bin\s*$/i.test(trimmed.slice(0, trimmed.indexOf(mNextRun[2]))) ? "将于 " : "：";
+            var tRest = formatDuration(mNextRun[2]) || mNextRun[2];
+            var tmRest = mNextRun[2].match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            if (tmRest) {
+                tRest = formatTime12h(tmRest[1], tmRest[2], tmRest[3]) || tRest;
+            }
+            return lead + runDir + sepWord + tRest + (sepWord === "将于 " ? " 后执行" : "") + trail;
+        }
+
         if ((trimmed === "at" || trimmed === "on") && contextNode && !isInsideProseFlow(contextNode)) {
             var schedParent = contextNode.nodeType === 3 ? contextNode.parentNode : contextNode;
             for (var sd = 0; sd < 2 && schedParent && schedParent !== document.body && schedParent !== document.documentElement; sd++) {
@@ -741,9 +776,9 @@
         }
     }
 
-    // 8. Zero-Flash High-FPS Overlay & Tooltip Synchronization
-    var POPUP_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-floating-ui-portal] > div, [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover';
-    var POPUP_ROOT_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover';
+    // 8. Zero-Flash High-FPS Overlay, Tooltip & Select-Trigger Synchronization
+    var POPUP_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-floating-ui-portal] > div, [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover, button[aria-haspopup], [role="combobox"], [data-slot="select-trigger"]';
+    var POPUP_ROOT_SELECTOR = '[data-radix-popper-content-wrapper], [data-floating-ui-portal], [data-testid="context-menu-popup"], [role="tooltip"], .monaco-hover, button[aria-haspopup], [role="combobox"], [data-slot="select-trigger"]';
     var observedPopupSet = typeof WeakSet === "function" ? new WeakSet() : null;
     var isPopupTranslating = false;
     var popupObserver = null;
@@ -780,6 +815,7 @@
 
     function observePopupContainer(el) {
         if (!popupObserver || !el || el.nodeType !== 1) return;
+        if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return;
         if (observedPopupSet) {
             if (observedPopupSet.has(el)) return;
             observedPopupSet.add(el);

@@ -336,7 +336,7 @@
     "Terms of Service": "服务条款",
     "Editor Settings": "编辑器设置",
     "Configure editor-specific behaviors and shortcuts.": "配置代码编辑器的专属行为与快捷键偏好。",
-    "Marketplace": "插件市场",
+    "Marketplace": "扩展市场",
     "Marketplace Item URL": "插件详情页 URL",
     "Marketplace Gallery URL": "插件市场 API 仓库 URL",
     "Selection Actions": "选区浮动操作栏",
@@ -714,7 +714,7 @@
     "Suggested Prompts": "推荐提示词",
     "Commands": "可用指令",
     "Agents": "智能体",
-    "Tools": "包含工具",
+    "Tools": "工具",
     "Try asking:": "试试这样提问：",
     "Try:": "试试：",
     "No commands available": "暂无可用指令",
@@ -1978,7 +1978,7 @@
     "Conversation limit reached": "已达到会话上限",
     "Conversation unavailable": "当前会话不可用",
     "Add Hook Card": "添加生命周期钩子卡片",
-    "Add MCP Server": "添加 MCP 服务端",
+    "Add MCP Server": "添加 MCP 服务器",
     "Add MCP Servers": "批量添加 MCP 服务端",
     "Configure hooks that run on agent lifecycle events.": "配置在智能体生命周期事件中触发执行的脚本钩子。",
     "Ask the agent to diagnose and fix this server": "让智能体协助诊断并修复该 MCP 服务端",
@@ -2325,7 +2325,7 @@
     "No skills defined": "尚未定义任何技能",
     "No subagents found": "未发现任何子智能体",
     "No subagents defined": "尚未定义任何子智能体",
-    "No MCP servers configured": "尚未配置任何 MCP 服务",
+    "No MCP servers configured": "暂未配置 MCP 服务器",
     "No MCP servers connected": "尚未连接任何 MCP 服务",
     "No plugins found": "未发现任何插件",
     "marketplace": "插件市场",
@@ -4405,7 +4405,130 @@
     "on Thursday": "每周四",
     "on Friday": "每周五",
     "on Saturday": "每周六",
-    "on Sunday": "每周日"
+    "on Sunday": "每周日",
+    "Run Now": "立即运行",
+    "AGENT": "智能体",
+    "Agent": "智能体",
+    "Paused. Resume it to schedule the next run.": "已暂停。恢复启用后即可按计划安排下次运行。",
+    "Show all": "显示全部",
+    "Show less": "收起",
+    "Runs": "运行记录",
+    "No runs yet": "暂无运行记录",
+    "Pause": "暂停",
+    "Duplicate": "创建副本",
+    "Succeeded": "执行成功",
+    "Skipped": "已跳过",
+    "Timed out": "运行超时",
+    "Queued": "排队中",
+    "Repeat": "重复",
+    "Frequency": "频率",
+    "Interval": "间隔",
+    "Unit": "单位",
+    "Minute": "分钟",
+    "Minutes": "分钟",
+    "minute": "分钟",
+    "minutes": "分钟",
+    "Hour": "小时",
+    "Hours": "小时",
+    "Day": "天",
+    "Week": "周",
+    "Weeks": "周",
+    "Month": "月",
+    "Months": "月",
+    "Yearly": "每年",
+    "Repeat on": "重复日期",
+    "On days": "指定星期",
+    "Days of week": "星期",
+    "Day of week": "星期几",
+    "Day of month": "每月几号",
+    "On day": "指定日期",
+    "On the": "在每月",
+    "Last day": "最后一天",
+    "Last day of month": "每月最后一天",
+    "First weekday": "第一个工作日",
+    "Last weekday": "最后一个工作日",
+    "At time": "执行时间",
+    "Start time": "开始时间",
+    "Time of day": "时间",
+    "Time zone": "时区",
+    "Local time": "本地时间",
+    "Use local timezone": "使用本地时区",
+    "Cron": "Cron 表达式",
+    "Use cron expression": "使用 Cron 表达式",
+    "Cron syntax": "Cron 语法",
+    "Starts": "开始于",
+    "Starts on": "开始日期",
+    "Ends": "结束于",
+    "Never": "永不结束",
+    "On date": "指定日期",
+    "After": "重复指定次数后",
+    "occurrences": "次后结束",
+    "Next scheduled run": "下次计划运行",
+    "Schedule summary": "计划摘要",
+    "Trigger type": "触发类型",
+    "Event": "事件触发",
+    "On the hour": "整点",
+    "Minutes past the hour": "整点后分钟数",
+    "Workflows": "工作流",
+    "Workflow": "工作流",
+    "workflow": "工作流",
+    "workflows": "工作流",
+    "No rules yet": "暂无规则",
+    "No workflows yet": "暂无工作流",
+    "No skills yet": "暂无技能",
+    "No custom workflows yet.": "暂无自定义工作流。",
+    "No custom hooks yet.": "暂无自定义钩子。",
+    "No custom commands yet.": "暂无自定义指令。",
+    "New rule": "新建规则",
+    "New workflow": "新建工作流",
+    "New Workflow": "新建工作流",
+    "Add workflow": "添加工作流",
+    "Add Workflow": "添加工作流",
+    "New skill": "新建技能",
+    "Add skill": "添加技能",
+    "Add Skill": "添加技能",
+    "Manage rules": "管理规则",
+    "Manage workflows": "管理工作流",
+    "Manage skills": "管理技能",
+    "Manage MCP servers": "管理 MCP 服务器",
+    "Manage MCP Servers": "管理 MCP 服务器",
+    "Global rules": "全局规则",
+    "Workspace rules": "工作区规则",
+    "Global workflows": "全局工作流",
+    "Workspace workflows": "工作区工作流",
+    "Global skills": "全局技能",
+    "Workspace skills": "工作区技能",
+    "Activation": "激活方式",
+    "Activation mode": "激活方式",
+    "Activation Mode": "激活方式",
+    "Always On": "始终启用",
+    "Always on": "始终启用",
+    "Always Apply": "始终应用",
+    "Always apply": "始终应用",
+    "Manual": "手动调用",
+    "manual": "手动调用",
+    "Model Decision": "由模型自主判断",
+    "Model decision": "由模型自主判断",
+    "Agent decides": "智能体自主判断",
+    "Agent Decides": "智能体自主判断",
+    "Glob": "按文件匹配 (Glob)",
+    "Globs": "文件匹配模式 (Globs)",
+    "Apply to specific files": "仅对特定文件生效",
+    "Specific files": "特定文件",
+    "File pattern": "文件匹配模式",
+    "When mentioned": "被 @提及时启用",
+    "When Mentioned": "被 @提及时启用",
+    "@ Mentioned": "被 @提及时启用",
+    "Slash Commands": "斜杠指令",
+    "Slash commands": "斜杠指令",
+    "User": "用户",
+    "Browse marketplace": "浏览扩展市场",
+    "Add MCP server": "添加 MCP 服务器",
+    "No MCP servers": "暂无 MCP 服务器",
+    "View raw config": "查看原始配置",
+    "Reconnect": "重新连接",
+    "Resources": "资源",
+    "Prompts": "提示词"
   },
   "reverse_map": {
     "始终询问": [
@@ -5120,20 +5243,27 @@
     ],
     "小时": [
       "hour",
-      "hours"
+      "hours",
+      "Hour",
+      "Hours"
     ],
     "周": [
       "week",
-      "weeks"
+      "weeks",
+      "Week",
+      "Weeks"
     ],
     "月": [
       "month",
-      "months"
+      "months",
+      "Month",
+      "Months"
     ],
     "天": [
       "Days",
       "day",
-      "days"
+      "days",
+      "Day"
     ],
     "星期日": [
       "Sunday"
@@ -6373,25 +6503,112 @@
       "on Sunday"
     ],
     "周一": [
-      "Monday"
+      "Monday",
+      "Mon"
     ],
     "周二": [
-      "Tuesday"
+      "Tuesday",
+      "Tue"
     ],
     "周三": [
-      "Wednesday"
+      "Wednesday",
+      "Wed"
     ],
     "周四": [
-      "Thursday"
+      "Thursday",
+      "Thu"
     ],
     "周五": [
-      "Friday"
+      "Friday",
+      "Fri"
     ],
     "周六": [
-      "Saturday"
+      "Saturday",
+      "Sat"
     ],
     "周日": [
-      "Sunday"
+      "Sunday",
+      "Sun"
+    ],
+    "分钟": [
+      "Minute",
+      "Minutes",
+      "minute",
+      "minutes"
+    ],
+    "每年": [
+      "Yearly"
+    ],
+    "永不结束": [
+      "Never"
+    ],
+    "指定日期": [
+      "On date",
+      "On day"
+    ],
+    "最后一天": [
+      "Last day"
+    ],
+    "每月最后一天": [
+      "Last day of month"
+    ],
+    "第一个工作日": [
+      "First weekday"
+    ],
+    "最后一个工作日": [
+      "Last weekday"
+    ],
+    "使用本地时区": [
+      "Use local timezone"
+    ],
+    "本地时间": [
+      "Local time"
+    ],
+    "始终启用": [
+      "Always On",
+      "Always on"
+    ],
+    "始终应用": [
+      "Always Apply",
+      "Always apply"
+    ],
+    "手动调用": [
+      "Manual",
+      "manual"
+    ],
+    "由模型自主判断": [
+      "Model Decision",
+      "Model decision"
+    ],
+    "智能体自主判断": [
+      "Agent decides",
+      "Agent Decides"
+    ],
+    "按文件匹配 (Glob)": [
+      "Glob"
+    ],
+    "仅对特定文件生效": [
+      "Apply to specific files"
+    ],
+    "特定文件": [
+      "Specific files"
+    ],
+    "被 @提及时启用": [
+      "When mentioned",
+      "When Mentioned",
+      "@ Mentioned"
+    ],
+    "工作流": [
+      "Workflows",
+      "Workflow",
+      "workflows",
+      "workflow"
+    ],
+    "用户": [
+      "User"
+    ],
+    "项目": [
+      "Project"
     ]
   },
   "regex_rules": [
