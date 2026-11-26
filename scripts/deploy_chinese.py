@@ -1013,7 +1013,7 @@ def main():
             with open(main_js, "r", encoding="utf-8") as f:
                 m_content = f.read()
 
-            if "web-contents-created" not in m_content and "injectAntigravityI18n" not in m_content:
+            if "injectAntigravityI18n" not in m_content:
                 main_inject = (
                     "    // Register global WebContents i18n injection lifecycle hook\n"
                     "    electron_1.app.on('web-contents-created', (_event, wc) => {\n"
@@ -1027,6 +1027,8 @@ def main():
                     m_content = m_content[:m_match.end()] + "\n" + main_inject + m_content[m_match.end():]
                     with open(main_js, "w", encoding="utf-8") as f:
                         f.write(m_content)
+                else:
+                    print("[!] Warning: main.js whenReady() anchor not found; skipping global web-contents-created injection.")
             modified_files.append(main_js)
 
         modified_files.append(os.path.join(dist_dir, "i18n_runner.js"))
